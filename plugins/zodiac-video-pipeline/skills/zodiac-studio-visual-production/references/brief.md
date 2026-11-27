@@ -22,7 +22,7 @@ product: it is checked by people, never an approval, and it is not a second sour
   - `viewer_read`: what a muted viewer must understand (who does what, what changes, what it means).
   - `focus`: the single entity or fact the eye must land on.
   - `setting`: the place implied by what the characters do, never "unspecified".
-  - `props`: library props only as background, each with the action that uses it (none is fine). The scene's own object is its `picture` with motif `hero`: `fact` names the object and how each state changes with the words.
+  - `props`: library props only as background, each with the action that uses it (none is fine). A Story Visual is optional (no quota; motif `none` with a reason when the beat does not need one). When used, the scene's own object is its `picture` with motif `hero`: `fact` names the object and how each state changes with the words.
   - `acting_turns`: the two or three moments where someone visibly changes (the words they land on), including the reaction beat.
   - `picture`: one of the picture motifs and the `fact` it makes visible, or `none` with the reason (characters and props already carry it).
 - `cover`: the cover is this episode's own, never the concept's template. `topic` (the opening's short theme, begins "Cách" or "Khi", or with the sign's name followed by a space, names the

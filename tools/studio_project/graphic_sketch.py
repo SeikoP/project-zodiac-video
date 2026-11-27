@@ -17,6 +17,7 @@ SHAPES = ("box", "circle", "line", "arrow", "text", "face", "check", "cross", "h
 COLORS = {"ink": INK, "paper": PAPER, "teal": TEAL, "coral": CORAL, "gold": GOLD, "card": CARD}
 MOODS = ("happy", "flat", "angry", "sad", "surprised")
 MAX_PARTS, MAX_STEPS, MAX_TEXTS = 18, 4, 6
+MIN_TEXT = 60  # px on the 960x630 canvas: lettering stays readable on a phone (the band is shown at about two thirds)
 FIELDS = {"shape", "x", "y", "w", "h", "color", "text", "step"}
 
 
@@ -43,6 +44,8 @@ def _check_parts(raw_parts, *, low: int, single_step: bool) -> list[dict]:
         text = raw["text"]
         if raw["shape"] == "text":
             text = _text(text, 28)
+            if h < MIN_TEXT:
+                reject(f"sketch_text_small: part {index} text needs h of at least {MIN_TEXT} so it reads at phone size")
         elif raw["shape"] == "face":
             if text not in MOODS:
                 reject(f"sketch_face_mood: part {index} text must be one of {list(MOODS)}")
@@ -144,9 +147,9 @@ def draw(L, spec, step):
         elif shape == "text":
             size = min(h, 110)
             if L.width(p["text"], size) > w + 6:
-                size = max(24, int(size * w / L.width(p["text"], size)))
-                if L.width(p["text"], size) > w + 6:
-                    reject("sketch_text_overflow: " + p["text"])
+                size = int(size * w / L.width(p["text"], size))
+                if size < MIN_TEXT - 6:
+                    reject(f"sketch_text_overflow: {p['text']!r} would need a size under {MIN_TEXT - 6}px in a box {w} wide; widen the box (up to 900) or shorten the words")
             out.append(L.draw(p["text"], cx, y + h * .78, size, ink, "center"))
         elif shape == "face":
             out.append(_face(p, cx, cy, fill))

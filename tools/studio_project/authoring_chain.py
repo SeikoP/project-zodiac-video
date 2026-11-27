@@ -569,11 +569,6 @@ class LiveIO:
                 if motif in seen and motif not in ("sketch", "hero"):  # a sketch or a hero is drawn anew each time
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
-        for sid in order:  # the scene's own object, drawn and changed by the words: without it the picture is clip-art beside the actors
-            if texts.get(sid) and "hero" not in graphic_motifs_of(texts.get(sid)) and not has_story_visual(texts.get(sid)):
-                found.append({"code": "HERO_MISSING", "scene_id": sid,
-                              "detail": "cảnh chưa có vật chính do agent vẽ: chọn graphic motif 'hero', vẽ đúng vật mà lời đọc nói tới ở 2-4 trạng thái "
-                                        "đổi theo từng câu (nguyên → cắt → trao…), mỗi trạng thái một neo lời"})
         for sid in order:  # a prop that nothing acts on is decoration: the scene's act is chosen again with the prop doing something
             idle = idle_props(texts.get(sid))
             if idle:

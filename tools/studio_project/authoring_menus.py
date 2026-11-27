@@ -132,7 +132,7 @@ BRIEF_RULES = (
     "You are preparing the production brief BEFORE anything is built. Read every document in the data (the narration scene by scene, the "
     "narrative plan, the writer brief, the episode scope, the voice direction) and the whole skill above, then write the brief exactly as "
     "brief.md describes. Think about the episode as ONE argument: what it claims, where it turns, what the viewer must see to follow it "
-    "muted. EVERY scene has a HERO: the one object the scene is about, drawn by the agent in 2-4 states that the words change (picture.motif = hero; fact = the object and how it changes, e.g. a whole cake, then cut into two unequal pieces, then one piece pushed across); it must fail the removal test: delete it and the scene loses its plot. Pictures (graphic) otherwise make ONE countable, comparable or written fact visible. Prefer a sketch: a drawing YOU compose for this scene from parts (see graphic_rules), so no two episodes share one; a fixed layout is the fallback when it fits exactly: stamp (a verdict word), meter (a level between two "
+    "muted. A Story Visual is OPTIONAL and has no quota (story-visual.md): use one only where it passes all five tests (central, concrete, zodiac-grounded, readable with the sound off, additive beyond the actors, the library props and the place); otherwise picture.motif = none with the reason. When you use one, plan it as: fact = who and what, with identity and ownership visible; change = before -> change -> consequence in one sentence; why = what is lost without it. Draw it yourself: hero (one object in 2-4 states the words change, with the story text lettered in it) or sketch (a diagram of a relationship or a count that builds up); the story text is part of the picture, not a separate overlay. Fixed layouts are only a fallback. Pictures (graphic) make ONE countable, comparable or written fact visible. Prefer a sketch: a drawing YOU compose for this scene from parts (see graphic_rules), so no two episodes share one; a fixed layout is the fallback when it fits exactly: stamp (a verdict word), meter (a level between two "
     "sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a "
     "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
     "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese. "
@@ -159,7 +159,7 @@ def brief_schema(scene_ids: list[str], cast_ids: list[str] | None = None) -> dic
         "scene_id": _enum(scene_ids), "beat": text(200), "viewer_read": text(200), "focus": text(120), "setting": text(120),
         "device": text(160), "who_on_stage": arr(text(40), 4),
         "props": arr(_object({"prop": text(40), "used_for": text(100), "change": text(100)}), 3), "acting_turns": arr(text(120), 4),
-        "picture": _object({"motif": _enum(("none",) + GRAPHIC_MOTIFS), "fact": text(120), "why": text(160)})})
+        "picture": _object({"motif": _enum(("none",) + GRAPHIC_MOTIFS), "fact": text(120), "change": text(200), "why": text(160)})})
     return _object({
         "story_read": text(400), "tone": text(200),
         "characters": arr(_object({"who": text(40), "relation": text(160), "wants": text(120), "on_screen": {"type": "boolean"}}), 6),
@@ -181,11 +181,11 @@ def _object(properties: dict) -> dict:
 
 
 GRAPHIC_RULES = (
-    "HERO (required in every scene): the ONE object this scene is about (the cake, the pillow, the film, the message), drawn by you in 2-4 states that "
+    "HERO (a Story Visual that follows ONE object): the object this scene is about (the cake, the pillow, the film, the message), drawn by you in 2-4 states that "
     "the narration changes: whole, then cut, then handed over, then left alone. Each state is a complete drawing (2-14 parts, same parts and 960x630 canvas "
     "as sketch, every step 1) that REPLACES the one before; the object FILLS the canvas (at least 55% of its width or height; Core refuses a speck) and each state differs from the one before by at least two parts (a slice cut away, a part moved, crossed out, added); each state has its own anchor_id, in the order of the words, and the first state's anchor is "
-    "the graphic's anchor_id. The change must be what the words say, the STORY TEXT is part of the picture (merged with the story visual): every state letters at least one text part with words taken from this scene's narration (the phrase the viewer should remember, <=28 chars), so the drawing and the words are one thing; and the scene must lose its plot without it: if the object could be deleted and "
-    "the story would read the same, you drew the wrong object. Draw the object itself, with its details (slices, a bite, a crack, a crossed-out line), "
+    "the graphic's anchor_id. The change must be what the words say, the STORY TEXT is part of the picture (merged with the story visual): every state letters at least one text part with words taken from this scene's narration (the phrase the viewer should remember, <=28 chars), so the drawing and the words are one thing; and it exists only if it passes the Story Visual tests: if the object could be deleted and "
+    "the story would read the same, choose none instead. Before -> change -> consequence, with identity and ownership readable in the picture (whose cake, whose seat). Draw the object itself, with its details (slices, a bite, a crack, a crossed-out line), "
     "never a label card; faces and hands of the characters are NOT drawn here, the characters are on stage. Library props are only background now. "
     "SKETCH (preferred): draw the scene's idea yourself as 3-18 parts on a 960x630 canvas (x,y = top-left, w,h = size; for line/arrow w,h are the "
     "end offset). Shapes: box, circle, line, arrow, text (a short label), face (text = happy|flat|angry|sad|surprised), check, cross, heart, star, scribble, wedge (a cake or pie slice), phone, pillow, cup. "

@@ -47,7 +47,7 @@ Fixed layouts (stamp, meter, versus, receipt, route, folder, tally, chat_thread)
 - A sketch passes the five tests in `invention.md` like any picture. Two scenes never share the same drawing; a callback to an earlier sketch is allowed only when the brief names it.
 - Use a fixed layout only when its form is the fact itself (a receipt for a bill, a route for stops) and say so in the brief's `why`.
 
-## Hero: the scene's own object, drawn by you (required in every scene)
+## Hero: the scene's own object, drawn by you (optional: only where it passes the Story Visual tests)
 
 The library props are clip-art: they stand beside the characters and the story reads the same without them. The hero is different: it is **the object the scene is about**, drawn by you, and **the words change it**.
 
