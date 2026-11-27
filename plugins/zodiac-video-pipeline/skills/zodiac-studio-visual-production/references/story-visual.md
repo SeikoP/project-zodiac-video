@@ -29,9 +29,20 @@ Ma Kết's three Story Visuals were not pictures placed in a scene; each one **w
 
 ## Studio graphics: your own pictures (only the script is fixed)
 The owner approves the narration. Every picture decision after that is Studio's to invent, so Studio does not wait for a Phase 1 direction to draw a picture. In the stage choice, `graphic` is one optional drawing (stamp, meter, versus, receipt, route, folder, tally or chat_thread) that makes ONE fact of the scene visible: a verdict word, a level between two sides, two columns compared, items and a total, stops on a route, a named folder, a count, messages. Choose it when the narration states something the viewer can see better than hear; otherwise `none`.
-- Different motif in every scene. Two scenes that both end in a tally or a chat read as a template, not as a story; Core sends the later scene back.
+- Different picture in every scene (a sketch is drawn anew each time, so it never repeats). Two scenes that both end in a tally or a chat read as a template, not as a story; Core sends the later scene back.
 - Use the narration's own words in the fields, short. The first piece appears on the anchor you choose and the next pieces on the anchors after it, so pick the anchor where the fact is said.
 - A scene with a Phase 1 Story Visual keeps that one; no second picture.
 
 ## Not a label
 A Studio graphic that would read the same with the characters removed is a label card, not a story picture. Apply the five tests in `invention.md` (removal, anchor, change, own words, size) before choosing a motif, and prefer a picture the characters visibly react to on the same anchor. Different motif per scene is the minimum, not the goal: fill the fields with this moment's own words.
+
+## Sketch: the picture you draw yourself (preferred)
+
+Fixed layouts (stamp, meter, versus, receipt, route, folder, tally, chat_thread) are the same drawing in every episode. The default picture is a **sketch**: you compose it for this scene from parts, on a 960x630 canvas.
+
+- Parts: box, circle, line, arrow, text (a short label, at most 28 characters), face (happy, flat, angry, sad, surprised), check, cross, heart, star, scribble. 3 to 18 parts. Colours: ink, paper, teal, coral, gold, card.
+- `step` 1 to 4, no gaps, is the order the drawing builds up on the anchors: draw the cause first, the effect on the next anchor.
+- Draw what happens in THIS scene, the way a person would sketch it on a napkin: the cake cut into two unequal slices with a coral arrow pointing at the big one; a door, a clock and a small face getting angrier by step; two faces with a heart growing between them. Not a chart, not a caption on a card.
+- Keep parts apart, keep 40 px free at the edges, give every label a box wide enough for it (Core refuses text that does not fit; it never shrinks below readable).
+- A sketch passes the five tests in `invention.md` like any picture. Two scenes never share the same drawing; a callback to an earlier sketch is allowed only when the brief names it.
+- Use a fixed layout only when its form is the fact itself (a receipt for a bill, a route for stops) and say so in the brief's `why`.

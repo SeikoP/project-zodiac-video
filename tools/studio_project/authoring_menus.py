@@ -9,6 +9,7 @@ import json
 import re
 
 from . import accent_art, agent_authoring, catalog_v5, prop_families
+from .graphic_sketch import COLORS as SKETCH_COLORS, SHAPES as SKETCH_SHAPES
 
 MAX_EVENTS = 8
 MAX_PROPS = 2  # few objects: each must be acted on, a crowd of them only clutters the frame
@@ -131,7 +132,7 @@ BRIEF_RULES = (
     "You are preparing the production brief BEFORE anything is built. Read every document in the data (the narration scene by scene, the "
     "narrative plan, the writer brief, the episode scope, the voice direction) and the whole skill above, then write the brief exactly as "
     "brief.md describes. Think about the episode as ONE argument: what it claims, where it turns, what the viewer must see to follow it "
-    "muted. Pictures (graphic) make ONE countable, comparable or written fact visible: stamp (a verdict word), meter (a level between two "
+    "muted. Pictures (graphic) make ONE countable, comparable or written fact visible. Prefer a sketch: a drawing YOU compose for this scene from parts (see graphic_rules), so no two episodes share one; a fixed layout is the fallback when it fits exactly: stamp (a verdict word), meter (a level between two "
     "sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a "
     "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
     "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese. "
@@ -167,6 +168,10 @@ def brief_schema(scene_ids: list[str], cast_ids: list[str] | None = None) -> dic
         "rhythm": text(300), "rules_applied": arr(text(200), 6), "risks": arr(text(200), 6)})
 
 
+def _int(high: int, low: int = 0) -> dict:
+    return {"type": "integer", "minimum": low, "maximum": high}
+
+
 def _enum(values) -> dict:
     return {"type": "string", "enum": list(values) or [NONE]}
 
@@ -176,13 +181,18 @@ def _object(properties: dict) -> dict:
 
 
 GRAPHIC_RULES = (
+    "SKETCH (preferred): draw the scene's idea yourself as 3-18 parts on a 960x630 canvas (x,y = top-left, w,h = size; for line/arrow w,h are the "
+    "end offset). Shapes: box, circle, line, arrow, text (a short label), face (text = happy|flat|angry|sad|surprised), check, cross, heart, star, scribble. "
+    "Colours ink, paper, teal, coral, gold, card. step 1-4 = the order the parts appear on the anchors, steps with no gaps. Compose a picture of THIS story, not a "
+    "chart: the cake cut in two unequal slices with a hand on one, a door with an arrow and a clock, two faces and a heart growing between them. "
+    "Keep parts apart, labels short (<=28 chars, text width must fit its box), keep 40px free at the edges. Never the same drawing as another scene. "
     "graphic = an OPTIONAL picture Studio draws to make ONE story fact visible (not decoration). Pick 'none' unless the narration states "
     "something countable, comparable or written that the viewer should SEE: a stamp (a verdict word), meter (a level between two sides), "
     "versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a count), "
     "chat_thread (messages). The episode needs at least one such picture (about one scene in four): Core sends a scene back when its "
     "words state a countable, comparable or written fact and you chose 'none'. Use a DIFFERENT motif in every scene; never the same one twice. Fields are short, in Vietnamese, exact words "
     "from the narration where possible. anchor_id = the words where the picture first appears; later pieces appear on the anchors after it.")
-GRAPHIC_MOTIFS = ("stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
+GRAPHIC_MOTIFS = ("sketch", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
 
 
 def _graphic_schema(menus: dict) -> dict:
@@ -191,6 +201,9 @@ def _graphic_schema(menus: dict) -> dict:
     arr = lambda item, n: {"type": "array", "maxItems": n, "items": item}  # noqa: E731
     return {"anyOf": [
         _object({"motif": _enum(["none"])}),
+        _object({"motif": _enum(["sketch"]), "anchor_id": anchor,
+                 "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960), "h": _int(630),
+                                       "color": _enum(tuple(SKETCH_COLORS)), "text": text(28), "step": _int(4, 1)}), 18)}),
         _object({"motif": _enum(["stamp"]), "anchor_id": anchor, "text": text(16), "sub": text(30)}),
         _object({"motif": _enum(["meter"]), "anchor_id": anchor, "title": text(24), "left": text(14), "right": text(14), "level": _enum(["1", "2", "3", "4"])}),
         _object({"motif": _enum(["versus"]), "anchor_id": anchor, "left_title": text(14), "right_title": text(14),

@@ -557,7 +557,7 @@ class LiveIO:
         seen: dict[str, str] = {}
         for sid in order:  # the same picture motif twice reads as a template, not as a story: the later scene chooses again
             for motif in graphic_motifs_of(texts.get(sid)):
-                if motif in seen:
+                if motif in seen and motif != "sketch":  # a sketch is drawn anew each time
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
         for sid in order:  # a prop that nothing acts on is decoration: the scene's act is chosen again with the prop doing something

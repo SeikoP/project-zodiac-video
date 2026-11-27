@@ -528,6 +528,8 @@ def graphic_to_spec(graphic: dict) -> dict:
     """The model's flat choice as the art module's spec (counts and levels arrive as text)."""
     motif = graphic["motif"]
     try:
+        if motif == "sketch":
+            return {"type": "sketch", "parts": [dict(p) for p in graphic["parts"]]}
         if motif == "stamp":
             return {"type": "stamp", "text": graphic["text"], "sub": graphic["sub"]}
         if motif == "meter":
