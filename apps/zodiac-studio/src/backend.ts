@@ -191,7 +191,8 @@ export const backend = {
   pipelineCardResolve: (project_id: string, scene_id: string, choice: string) =>
     request<{ scene_id: string; choice: string }>("pipeline.card.resolve", { project_id, scene_id, choice }),
   /** The explicit "Soạn lại từ đầu": drops the authoring parts earlier runs finished. Retrying ("Chạy lại") never does this. */
-  pipelineAuthoringDiscard: (project_id: string) => request<{ discarded: boolean }>("pipeline.authoring.discard", { project_id }),
+  pipelineAuthoringDiscard: (project_id: string, reset_source = false) =>
+    request<{ discarded: boolean }>("pipeline.authoring.discard", reset_source ? { project_id, reset_source } : { project_id }),
   pipelineCancel: (project_id: string) => request<PipelineData>("pipeline.cancel", { project_id }),
   pipelineSetMode: (project_id: string, mode: PipelineMode) => request<{ mode: PipelineMode }>("pipeline.mode.set", { project_id, mode }),
   pipelineAutopilotStart: (project_id: string, base_revision: number) =>

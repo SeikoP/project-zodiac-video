@@ -284,5 +284,17 @@ class VisualWorkspaceTests(unittest.TestCase):
         with self.assertRaises(StudioError) as caught:check([late,swapped])
         self.assertIn("TRACE_STATE_BEFORE",str(caught.exception))
 
+    def test_reset_source_archives_the_intent_and_returns_to_no_visual_yet(self):
+        self.visual.command(self.project,"reset-seed",0,"source.replace",{"intent":self.intent})
+        source=self.handle.workspace/".authoring/visual-intent.json"
+        self.assertTrue(source.exists())
+        result=self.visual.reset_source(self.project)
+        self.assertEqual(sorted(result["archived"]),["state.json","visual-intent.json"])
+        self.assertFalse(source.exists())
+        self.assertIsNone(self.visual.snapshot(self.project)["intent"])
+        archived=list((self.handle.workspace/".runtime/visual-workspace/archive").glob("*/visual-intent.json"))
+        self.assertEqual(len(archived),1)
+        self.assertEqual(json.loads(archived[0].read_text("utf8")),self.intent)
+
 
 if __name__=="__main__":unittest.main()

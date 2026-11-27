@@ -445,7 +445,7 @@ class AgentManager:
             skill_digest.digest(skill)  # an unknown or missing skill kind fails now, not inside the agent turn
         return self.start(project_id, choice_task={"schema": schema, "data": prompt_data, **({"skill": skill} if skill else {})}, role=role)
 
-    def discard_authoring_progress(self, project_id: str) -> dict:
+    def discard_authoring_progress(self, project_id: str, *, reset_source: bool = False) -> dict:
         """The user's explicit "Soạn lại từ đầu": forget what earlier authoring runs finished, so the next run starts from the cast.
 
         Retrying never does this (it keeps every finished scene); only this call, from the GUI, drops the stored parts."""
@@ -458,7 +458,8 @@ class AgentManager:
         for task_id in groups:  # the older scene-by-scene path keeps its parts on the stopped runs
             self._update(task_id, part_texts={}, children=[], blamed=[], skeleton_error=None)
         removed = authoring_chain.discard_stored(self.service.visual._handle(project_id).workspace)
-        return {"discarded": removed or bool(groups)}
+        archived = self.service.visual.reset_source(project_id) if reset_source else None
+        return {"discarded": removed or bool(groups) or bool(archived), **({"source": archived} if archived else {})}
 
     def start_authoring_chain(self, project_id: str, instruction: str) -> dict:
         """Author the episode with the constructive chain (cast, then per scene stage/act/Core assembly). Same task shape as

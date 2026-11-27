@@ -239,6 +239,24 @@ class VisualWorkspace:
                     result["job"] = state["job"]
             return result
 
+    def reset_source(self, project_id):
+        """The owner's "Soạn lại hình ảnh" on a finished episode: the Visual Intent and its state go to an archive folder (never deleted)
+        and the episode is back to "no visual yet", so the normal authoring run starts from the script. Voice and Phase 1 are untouched."""
+        import time
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, "visual-state"):
+            root, source = self._paths(handle)
+            if (root/"pending.json").exists():
+                raise _error("VISUAL_RECOVERY_CONFLICT", "A visual transaction is pending; reopen the episode first")
+            archive = _trusted_dir(handle.workspace, root/"archive")/time.strftime("%Y%m%d-%H%M%S")
+            archive.mkdir(parents=True, exist_ok=True)
+            moved = []
+            for path in (source, root/"state.json"):
+                if path.exists():
+                    path.replace(archive/path.name)
+                    moved.append(path.name)
+        return {"archived": moved, "archive": archive.name}
+
     def command(self, project_id, command_id, base_revision, kind, payload, *, voice_dependencies=None):
         if not isinstance(command_id, str) or not ID.fullmatch(command_id) or kind not in COMMANDS:
             raise _error("VISUAL_COMMAND_FORBIDDEN", "Unsupported visual command or command id")

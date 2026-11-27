@@ -62,7 +62,7 @@ export type PipelineApi = {
   autopilotStop(projectId: string): Promise<RunRecord>;
   setMode(projectId: string, mode: PipelineMode): Promise<{ mode: PipelineMode }>;
   resolveCard(projectId: string, sceneId: string, choice: string): Promise<unknown>;
-  discardAuthoring(projectId: string): Promise<unknown>;
+  discardAuthoring(projectId: string, resetSource?: boolean): Promise<unknown>;
 };
 
 export type Selection = { nodeId: string | null; sceneId: string | null };

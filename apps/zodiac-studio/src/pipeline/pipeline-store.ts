@@ -161,7 +161,7 @@ export function createPipelineStore(api: PipelineApi, options: PipelineStoreOpti
       set({ ...snapshot, selection });
     },
     /** The owner's explicit "Soạn lại từ đầu": forgets the scenes already authored, so the next run starts from the cast. */
-    discardAuthoring: () => act(() => api.discardAuthoring(projectId)),
+    discardAuthoring: (resetSource = false) => act(() => api.discardAuthoring(projectId, resetSource)),
     /** Records the owner's answer to a card (never an approval); the chain reads it the next time it runs. */
     resolveCard: (sceneId: string, choice: string) => act(() => api.resolveCard(projectId, sceneId, choice)),
     /** Builds every scene that can be built, one after another (the backend runs one job at a time). Stops at the first failure. */

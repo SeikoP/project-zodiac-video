@@ -35,15 +35,18 @@ function Compact({ all, store, onRun, blockerOf }: { all: PipelineNode[]; store:
   // Only a step that failed or is waiting can have half-finished authoring behind it; "Chạy lại" keeps that work, this drops it.
   const authoring = all.find((n) => n.id === "visual");
   const canRestart = !!authoring && !running && ["FAILED", "STALE", "READY"].includes(authoring.status) && !blockerOf(authoring);
+  // A finished episode can be authored again from the script: the current Visual Intent is archived, never deleted.
+  const canRedo = !!authoring && !running && authoring.status === "DONE";
   return (
     <div className="phase-compact" data-phase="visual">
       <div className="phase-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Tiến độ hình ảnh"><span style={{ width: `${percent}%` }} /></div>
       <div className="phase-actions"><small>{done}/{total} bước xong · các cảnh và câu hỏi ở khung bên phải</small>
         {primary && !running && <button className="outline-btn phase-primary" onClick={() => onRun(primary.id)}>{primary.status === "READY" ? "Chạy" : "Chạy lại"}: {primary.title}</button>}
-        {canRestart && !confirming && <button className="subtle-btn phase-restart" onClick={() => setConfirming(true)}>Soạn lại từ đầu</button>}
-        {canRestart && confirming && <span className="phase-restart-confirm" role="alert">
-          <small>Bỏ các cảnh đã soạn xong và soạn lại toàn bộ (tốn thêm tài nguyên)?</small>
-          <button className="outline-btn" onClick={() => { setConfirming(false); void store.discardAuthoring(); }}>Bỏ và soạn lại</button>
+        {(canRestart || canRedo) && !confirming && <button className="subtle-btn phase-restart" onClick={() => setConfirming(true)}>{canRedo ? "Soạn lại hình ảnh" : "Soạn lại từ đầu"}</button>}
+        {(canRestart || canRedo) && confirming && <span className="phase-restart-confirm" role="alert">
+          <small>{canRedo ? "Lưu bản hình ảnh hiện tại vào kho lưu và soạn lại từ kịch bản (tốn thêm tài nguyên; phải duyệt lại)?"
+            : "Bỏ các cảnh đã soạn xong và soạn lại toàn bộ (tốn thêm tài nguyên)?"}</small>
+          <button className="outline-btn" onClick={() => { setConfirming(false); void store.discardAuthoring(canRedo); }}>Bỏ và soạn lại</button>
           <button className="subtle-btn" onClick={() => setConfirming(false)}>Giữ lại</button></span>}
         {!primary && !running && runnableScenes(all).length > 0 && <button className="outline-btn phase-primary" onClick={() => { void store.runScenes(); }}>Dựng các cảnh ({runnableScenes(all).length})</button>}
       </div>

@@ -76,8 +76,9 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         from .pipeline.runner import run_node
         return run_node(service, p["project_id"], p["node_id"], p["base_revision"], caller="gui")
     if method == "pipeline.authoring.discard":  # the explicit "Soạn lại từ đầu": the only thing that drops finished authoring parts
-        _exact(p, "project_id")
-        result = service.agent.discard_authoring_progress(p["project_id"])
+        if set(p) - {"project_id", "reset_source"} or "project_id" not in p or type(p.get("reset_source", False)) is not bool:
+            raise StudioError("RPC_PARAMS_INVALID", "Unexpected/missing parameter", "transport")
+        result = service.agent.discard_authoring_progress(p["project_id"], reset_source=p.get("reset_source", False))
         from .pipeline.runner import pipeline_get
         return {**result, "pipeline": pipeline_get(service, p["project_id"])}
     if method == "pipeline.cancel":
