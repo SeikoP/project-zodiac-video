@@ -447,7 +447,7 @@ class VoiceLab:
             self._save(handle, state)
         return self.snapshot(project_id)
 
-    def approve_episode(self, project_id, base_revision):
+    def approve_episode(self, project_id, base_revision, via=None):
         """The user's single "Duyệt giọng" click. Listening is optional: nothing has to have been played first.
 
         Only reachable from a user action (the GUI button via voice.confirm); assemble() and the autopilot never call it.
@@ -467,7 +467,7 @@ class VoiceLab:
             assembly["listened"] = {"kind": "user_listened", "wav_sha256": assembly["wav_sha256"], "confirmed_at": time.time(),
                                     "narration_sha256": state["narration_sha256"],
                                     "derived_from": "segment_proofs" if heard else "user_accepted",
-                                    **({"segments_heard_at": max(stamps)} if heard and stamps else {"playback": "skipped_by_user"})}
+                                    **({"segments_heard_at": max(stamps)} if heard and stamps else {"playback": "skipped_by_user"}), **({"via": via} if via else {})}
             state.pop("approval_note", None)
             state["playbacks"].pop("episode", None)
             state["revision"] += 1
