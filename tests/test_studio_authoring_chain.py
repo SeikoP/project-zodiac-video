@@ -360,3 +360,20 @@ class CheckFilterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScriptReadPlanTests(unittest.TestCase):
+    def test_planned_picture_missing_from_a_scene_is_sent_back_and_the_plan_is_shown_to_the_stage(self):
+        from tools.studio_project.authoring_chain import LiveIO
+        from tools.studio_project import authoring_menus
+        io = LiveIO.__new__(LiveIO)
+        io.capsule = {"scene_ranges": [{"id": "s01", "text": "x"}, {"id": "s02", "text": "y"}]}
+        io.use_plan({"story_read": "r", "scenes": [{"scene_id": "s02", "motif": "versus", "fact": "hai phía", "why": "w"},
+                                                   {"scene_id": "s01", "motif": "none", "fact": "", "why": ""}]})
+        self.assertEqual(io.planned("s02")["motif"], "versus")
+        self.assertIsNone(io.planned("s09"))
+        schema = authoring_menus.plan_schema(["s01", "s02"])
+        self.assertEqual(schema["properties"]["scenes"]["maxItems"], 2)
+        data = authoring_menus.stage_data({"frames": [], "mechanics": [], "cast": {}, "props": [], "dressing": [], "accent_parts": {}, "anchors": []},
+                                          "s02", "y", "g", planned=io.planned("s02"))
+        self.assertEqual(data["episode_plan_for_this_scene"]["motif"], "versus")

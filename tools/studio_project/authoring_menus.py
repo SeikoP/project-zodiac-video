@@ -112,15 +112,37 @@ def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list
             "accent_parts": {name: meta["reads"] for name, meta in accent_art.PARTS.items()}}
 
 
-def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str, used_motifs=()) -> dict:
+def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str, used_motifs=(), planned=None) -> dict:
     """What the stage choice is shown: the scene, and every menu it may pick from (accents with what they read as)."""
-    return {"scene_id": scene_id, "scene_text": scene_text, "goal": goal,
+    data = {"scene_id": scene_id, "scene_text": scene_text, "goal": goal,
             "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accent_parts")},
             "accent_rules": ("accent_id 'drawn' = Core draws your parts (two or three read as a place; each in its own slot: left, center, right; a "
                              "wide part - awning, string_lights, curtain - goes 'across' and then only floor parts may share it). 'none_fits' = the "
                              "place cannot be drawn from these parts; leave parts empty then."),
             "graphic_rules": GRAPHIC_RULES, "motifs_already_used_in_other_scenes": sorted(set(used_motifs)),
             "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
+    if planned:  # the episode plan, written after one read of the whole script: follow it unless it cannot be drawn
+        data["episode_plan_for_this_scene"] = planned
+    return data
+
+
+PLAN_RULES = (
+    "Read the WHOLE script once, as a story, before any scene is built. Decide the story pictures of the episode: for every scene say what "
+    "the viewer must SEE besides the characters. A picture (graphic) makes ONE fact visible: stamp (a verdict word), meter (a level "
+    "between two sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), "
+    "tally (a count), chat_thread (messages). Choose 'none' for a scene only when the characters and props already carry it. Spread "
+    "the pictures across the episode (they are a rhythm, not decoration), never the same motif twice, and give each a 'fact': the "
+    "words of the script it makes visible. 'story_read' = in two sentences, what the script argues and where the pictures turn it.")
+
+
+def plan_data(scenes: list[dict]) -> dict:
+    return {"scenes": scenes, "rules": PLAN_RULES}
+
+
+def plan_schema(scene_ids: list[str]) -> dict:
+    text = lambda n: {"type": "string", "maxLength": n}  # noqa: E731
+    row = _object({"scene_id": _enum(scene_ids), "motif": _enum(("none",) + GRAPHIC_MOTIFS), "fact": text(120), "why": text(160)})
+    return _object({"story_read": text(400), "scenes": {"type": "array", "maxItems": len(scene_ids), "items": row}})
 
 
 def _enum(values) -> dict:

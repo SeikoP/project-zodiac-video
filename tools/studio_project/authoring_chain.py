@@ -139,6 +139,15 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
         stored["skeleton"] = io.skeleton()
         io.save(stored)
     skeleton = stored["skeleton"]
+    read_script = getattr(io, "read_script", None)
+    if read_script is not None:  # one pass over the whole script decides the story pictures; a failed read leaves the scenes to choose alone
+        if "plan" not in stored and not stopped():
+            try:
+                stored["plan"] = read_script(skeleton)
+                io.save(stored)
+            except ChoiceError:
+                pass
+        io.use_plan(stored.get("plan") or {})
     outcomes: dict[str, SceneOutcome] = {}
     cards: list[Card] = []
     for sid, row in list(stored["scenes"].items()):
@@ -361,10 +370,26 @@ class LiveIO:
                 found += graphic_motifs_of(row.get("text"))
         return found
 
+    def read_script(self, skeleton: str) -> dict:
+        """The whole script in one agent read: {story_read, scenes: [{scene_id, motif, fact, why}]} (the story pictures of the episode)."""
+        from . import authoring_menus
+        rows = [{"scene_id": sid, "text": self._row(sid)["text"], "goal": self._goal(sid)} for sid in self.scene_ids()]
+        return self.choose("plan", authoring_menus.plan_schema(self.scene_ids()), authoring_menus.plan_data(rows))
+
+    def use_plan(self, plan: dict) -> None:
+        self._plan = plan or {}
+
+    def planned(self, sid: str) -> dict | None:
+        row = next((r for r in (getattr(self, "_plan", None) or {}).get("scenes", []) if r.get("scene_id") == sid), None)
+        if not row:
+            return None
+        return {"story_read": self._plan.get("story_read", ""), "motif": row.get("motif"), "fact": row.get("fact"), "why": row.get("why")}
+
     def stage_request(self, skeleton: str, sid: str, feedback):
         from . import authoring_menus
         menus = self._menus(skeleton, sid)
-        data = authoring_menus.stage_data(menus, sid, self._row(sid)["text"], self._goal(sid), used_motifs=self.used_motifs(exclude=sid))
+        data = authoring_menus.stage_data(menus, sid, self._row(sid)["text"], self._goal(sid), used_motifs=self.used_motifs(exclude=sid),
+                                          planned=self.planned(sid))
         if feedback:
             data["previous_findings"] = feedback
         return authoring_menus.stage_schema(menus), data
@@ -449,10 +474,12 @@ class LiveIO:
                 if motif in seen:
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
-        # The script, not Phase 1, decides whether the episode needs a picture: 'none' everywhere is refused when the words state facts.
-        from . import graphic_need
-        found += graphic_need.missing([(sid, next((r.get("text", "") for r in self.capsule.get("scene_ranges", []) if r.get("id") == sid), "")) for sid in order],
-                                      {sid for sid in order if graphic_motifs_of(texts.get(sid))})
+        for sid in order:  # the agent's own plan, written from one read of the whole script, is kept unless the picture cannot be drawn
+            plan = self.planned(sid)
+            if plan and plan.get("motif") not in (None, "none") and not graphic_motifs_of(texts.get(sid)):
+                found.append({"code": "STORY_GRAPHIC_PLANNED", "scene_id": sid,
+                              "detail": f"kế hoạch đọc cả kịch bản đã định hình '{plan['motif']}' cho cảnh này ({plan.get('fact') or plan.get('why')}); "
+                                        "chọn graphic đó, hoặc một motif khác nếu không vẽ được"})
         return found
 
     def core_fix(self, sid: str, text: str, issues: list[dict]) -> str:
