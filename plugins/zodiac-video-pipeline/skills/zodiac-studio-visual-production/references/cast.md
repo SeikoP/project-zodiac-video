@@ -19,3 +19,6 @@ Identity = body profile + hair silhouette + outfit cue + shirt color. Pose, expr
 
 ## States
 Give each member 4–6 state ids that cover neutral, the reaction beats and the acting beats of the story, using only known pose and expression ids (poses group by meaning: speaking, giving/taking, conflict, distress, joy, handling, calm, movement; expressions: flat, alarm, smug/sly, distress, relief). A pose written where an expression belongs (or the reverse) is a mistake, not a synonym. Default maximum is three unique character assets unless an exception reason exists; motion-only changes reuse the same SVG.
+
+## The episode cast plan
+`episode_cast_plan` = `{format:'zodiac-episode-cast-plan@1', bindings:[{member_id, entity_id, scene_ids, role:'member', reason}]}`. `member_id` is the English zodiac id of the sign the character stands for, `entity_id` is the cast entity, `scene_ids` lists EVERY scene that character appears in (every scene of the episode must be bound), and `reason` says in a full Vietnamese sentence why this character carries that sign in this story. The cast is designed from the production brief's `characters` and `story_read`, not from the catalog first.

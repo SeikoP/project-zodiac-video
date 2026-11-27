@@ -12,13 +12,14 @@ from .service import ROOT
 
 SKILL_DIR = ROOT / "plugins/zodiac-video-pipeline/skills/zodiac-studio-visual-production"
 BUDGET_CHARS = 26000
+BRIEF_BUDGET_CHARS = 48000  # the brief reads the whole skill, every module
 HEADER = "## Zodiac Phase 2 skill (trusted project guidance; follow it)"
 
 KINDS: dict[str, tuple[str, ...]] = {
     "skeleton": ("SKILL.md", "cast", "style", "concepts", "studio"),
     "scene": ("SKILL.md", "concepts", "scene", "acting", "story-visual", "studio"),
     "revise": ("SKILL.md", "concepts", "scene", "acting", "review", "studio"),
-    "plan": ("SKILL.md", "concepts", "story-visual", "studio"),
+    "brief": ("SKILL.md", "brief", "concepts", "style", "cast", "scene", "acting", "story-visual", "review", "studio"),
     "stage": ("SKILL.md", "concepts", "scene", "story-visual", "studio"),
     "act": ("SKILL.md", "concepts", "acting", "story-visual", "studio"),
     "review": ("SKILL.md", "style", "scene", "review", "studio"),

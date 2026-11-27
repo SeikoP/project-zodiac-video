@@ -133,21 +133,21 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
     if stored.get("fingerprint") != io.fingerprint():
         stored = {"fingerprint": io.fingerprint(), "skeleton": None, "scenes": {}}
     lock = threading.Lock()
+    read_brief = getattr(io, "read_brief", None)
+    if read_brief is not None:  # one read of the whole script and its documents comes first; a failed read leaves the scenes to choose alone
+        if not stored.get("brief") and not stopped():
+            try:
+                stored["brief"] = read_brief()
+                io.save(stored)
+            except ChoiceError:
+                pass
+        io.use_brief(stored.get("brief") or {})
     if not stored.get("skeleton"):
         if stopped():
             return ChainResult(None)
         stored["skeleton"] = io.skeleton()
         io.save(stored)
     skeleton = stored["skeleton"]
-    read_script = getattr(io, "read_script", None)
-    if read_script is not None:  # one pass over the whole script decides the story pictures; a failed read leaves the scenes to choose alone
-        if "plan" not in stored and not stopped():
-            try:
-                stored["plan"] = read_script(skeleton)
-                io.save(stored)
-            except ChoiceError:
-                pass
-        io.use_plan(stored.get("plan") or {})
     outcomes: dict[str, SceneOutcome] = {}
     cards: list[Card] = []
     for sid, row in list(stored["scenes"].items()):
@@ -314,7 +314,10 @@ class LiveIO:
             return kept
         error = "không rõ"
         for _ in range(2):
-            task = self._wait(self.service.agent.start(self.project_id, part_task=agent_parts.skeleton_task(self.capsule))["task_id"])
+            part = agent_parts.skeleton_task(self.capsule)
+            if getattr(self, "_brief", None):
+                part["production_brief"] = self._brief  # the cast is designed for the story the brief read, not from scratch
+            task = self._wait(self.service.agent.start(self.project_id, part_task=part)["task_id"])
             if task["status"] == "COMPLETED" and task.get("suggestion"):
                 return task["suggestion"]
             error = str(task.get("error") or task["status"])[:200]
@@ -370,20 +373,37 @@ class LiveIO:
                 found += graphic_motifs_of(row.get("text"))
         return found
 
-    def read_script(self, skeleton: str) -> dict:
-        """The whole script in one agent read: {story_read, scenes: [{scene_id, motif, fact, why}]} (the story pictures of the episode)."""
-        from . import authoring_menus
-        rows = [{"scene_id": sid, "text": self._row(sid)["text"], "goal": self._goal(sid)} for sid in self.scene_ids()]
-        return self.choose("plan", authoring_menus.plan_schema(self.scene_ids()), authoring_menus.plan_data(rows))
+    def _dossier(self) -> dict:
+        """Every document the episode carries, whole: the agent is not asked to work from a summary."""
+        from . import agent_authoring
+        read = lambda name: (json.loads((self.workspace / ".authoring" / name).read_text("utf8"))  # noqa: E731
+                             if (self.workspace / ".authoring" / name).is_file() else None)
+        catalog = self.capsule.get("catalog") or {}
+        return {"narration_by_scene": [{"scene_id": r["id"], "text": r["text"]} for r in self.capsule["scene_ranges"]],
+                "narrative_plan": self.capsule.get("narrative_plan"), "episode_scope": self.capsule.get("episode_scope"),
+                "writer_brief": read("phase3-writer-brief.json"), "voice_direction": read("voice-profile.json"),
+                "duration_seconds": self.capsule.get("duration_seconds"),
+                "vocabulary": {"frames": [f["id"] for f in catalog.get("frames", [])], "mechanics": [m["id"] for m in catalog.get("mechanics", [])],
+                               "props": sorted(row["id"] for row in catalog.get("props", []) if isinstance(row, dict) and row.get("id")),
+                               "picture_motifs": list(__import__("tools.studio_project.authoring_menus", fromlist=["GRAPHIC_MOTIFS"]).GRAPHIC_MOTIFS)},
+                "recent_episodes": self.capsule.get("visual_reuse")}
 
-    def use_plan(self, plan: dict) -> None:
-        self._plan = plan or {}
+    def read_brief(self) -> dict:
+        """The production brief: one agent read of the whole script and its documents (brief.md describes it)."""
+        from . import authoring_menus
+        return self.choose("brief", authoring_menus.brief_schema(self.scene_ids()), authoring_menus.brief_data(self._dossier()))
+
+    def use_brief(self, brief: dict) -> None:
+        self._brief = brief or {}
 
     def planned(self, sid: str) -> dict | None:
-        row = next((r for r in (getattr(self, "_plan", None) or {}).get("scenes", []) if r.get("scene_id") == sid), None)
+        """This scene's entry of the brief plus the episode-wide lines, or None when there is no brief."""
+        brief = getattr(self, "_brief", None) or {}
+        row = next((r for r in brief.get("scenes", []) if r.get("scene_id") == sid), None)
         if not row:
             return None
-        return {"story_read": self._plan.get("story_read", ""), "motif": row.get("motif"), "fact": row.get("fact"), "why": row.get("why")}
+        return {**{k: v for k, v in row.items() if k != "scene_id"}, "story_read": brief.get("story_read", ""), "tone": brief.get("tone", ""),
+                "rhythm": brief.get("rhythm", ""), "characters": brief.get("characters", [])}
 
     def stage_request(self, skeleton: str, sid: str, feedback):
         from . import authoring_menus
@@ -400,6 +420,8 @@ class LiveIO:
         data = {"scene_id": sid, "scene_text": self._row(sid)["text"], "goal": self._goal(sid), "stage": stage,
                 "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]],
                 "targets": [p["prop_id"] for p in stage["props"]] + [p["entity_id"] for p in stage["present"]]}
+        if self.planned(sid):
+            data["production_brief_for_this_scene"] = self.planned(sid)
         if feedback:
             data["previous_findings"] = feedback
         return authoring_menus.act_schema(menus, stage), data
@@ -475,10 +497,10 @@ class LiveIO:
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
         for sid in order:  # the agent's own plan, written from one read of the whole script, is kept unless the picture cannot be drawn
-            plan = self.planned(sid)
-            if plan and plan.get("motif") not in (None, "none") and not graphic_motifs_of(texts.get(sid)):
+            picture = (self.planned(sid) or {}).get("picture") or {}
+            if picture.get("motif") not in (None, "none") and not graphic_motifs_of(texts.get(sid)):
                 found.append({"code": "STORY_GRAPHIC_PLANNED", "scene_id": sid,
-                              "detail": f"kế hoạch đọc cả kịch bản đã định hình '{plan['motif']}' cho cảnh này ({plan.get('fact') or plan.get('why')}); "
+                              "detail": f"brief (đọc cả kịch bản) đã định hình '{picture['motif']}' cho cảnh này ({picture.get('fact') or picture.get('why')}); "
                                         "chọn graphic đó, hoặc một motif khác nếu không vẽ được"})
         return found
 

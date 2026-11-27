@@ -20,7 +20,14 @@ class DigestTests(unittest.TestCase):
 
     def test_a_digest_stays_within_budget(self):
         for kind in skill_digest.KINDS:
-            self.assertLess(len(skill_digest.digest(kind)["text"]), skill_digest.BUDGET_CHARS, kind)
+            self.assertLess(len(skill_digest.digest(kind)["text"]), skill_digest.BRIEF_BUDGET_CHARS if kind == "brief" else skill_digest.BUDGET_CHARS, kind)
+
+    def test_the_brief_reads_the_whole_skill(self):
+        text = skill_digest.digest("brief")["text"]
+        for module in ("brief", "concepts", "style", "cast", "scene", "acting", "story-visual", "review", "studio"):
+            self.assertIn(module, skill_digest.digest("brief")["modules"])
+        self.assertIn("production brief", text)
+        self.assertIn("Story first, library second", text)
 
     def test_unknown_kind_is_an_error(self):
         with self.assertRaises(KeyError):

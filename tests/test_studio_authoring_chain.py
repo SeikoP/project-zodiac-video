@@ -362,18 +362,40 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class ScriptReadPlanTests(unittest.TestCase):
-    def test_planned_picture_missing_from_a_scene_is_sent_back_and_the_plan_is_shown_to_the_stage(self):
+class ProductionBriefTests(unittest.TestCase):
+    def make_io(self):
         from tools.studio_project.authoring_chain import LiveIO
-        from tools.studio_project import authoring_menus
         io = LiveIO.__new__(LiveIO)
-        io.capsule = {"scene_ranges": [{"id": "s01", "text": "x"}, {"id": "s02", "text": "y"}]}
-        io.use_plan({"story_read": "r", "scenes": [{"scene_id": "s02", "motif": "versus", "fact": "hai phía", "why": "w"},
-                                                   {"scene_id": "s01", "motif": "none", "fact": "", "why": ""}]})
-        self.assertEqual(io.planned("s02")["motif"], "versus")
+        io.capsule = {"scene_ranges": [{"id": "s01", "text": "x"}, {"id": "s02", "text": "y"}], "catalog": {"frames": [{"id": "f"}], "mechanics": [{"id": "m"}], "props": [{"id": "phone"}]}}
+        io.workspace = __import__("pathlib").Path(__import__("tempfile").mkdtemp())
+        return io
+
+    def test_the_brief_reaches_the_stage_and_a_dropped_picture_is_sent_back(self):
+        from tools.studio_project import authoring_menus
+        io = self.make_io()
+        io.use_brief({"story_read": "r", "tone": "t", "rhythm": "z", "characters": [],
+                      "scenes": [{"scene_id": "s02", "beat": "b", "picture": {"motif": "versus", "fact": "hai phía", "why": "w"}},
+                                 {"scene_id": "s01", "beat": "b", "picture": {"motif": "none", "fact": "", "why": "carried"}}]})
+        self.assertEqual(io.planned("s02")["picture"]["motif"], "versus")
+        self.assertEqual(io.planned("s02")["story_read"], "r")
         self.assertIsNone(io.planned("s09"))
-        schema = authoring_menus.plan_schema(["s01", "s02"])
-        self.assertEqual(schema["properties"]["scenes"]["maxItems"], 2)
         data = authoring_menus.stage_data({"frames": [], "mechanics": [], "cast": {}, "props": [], "dressing": [], "accent_parts": {}, "anchors": []},
                                           "s02", "y", "g", planned=io.planned("s02"))
-        self.assertEqual(data["episode_plan_for_this_scene"]["motif"], "versus")
+        self.assertEqual(data["production_brief_for_this_scene"]["picture"]["fact"], "hai phía")
+
+    def test_the_brief_has_one_entry_per_scene_and_a_reading_receipt(self):
+        from tools.studio_project import authoring_menus
+        schema = authoring_menus.brief_schema(["s01", "s02"])
+        self.assertEqual((schema["properties"]["scenes"]["minItems"], schema["properties"]["scenes"]["maxItems"]), (2, 2))
+        self.assertIn("rules_applied", schema["required"])
+
+    def test_the_dossier_carries_every_document_whole(self):
+        io = self.make_io()
+        (io.workspace / ".authoring").mkdir()
+        (io.workspace / ".authoring/phase3-writer-brief.json").write_text('{"premise": "p"}', "utf8")
+        io.capsule.update(narrative_plan={"beats": [1]}, episode_scope={"sign": "libra"}, duration_seconds=82)
+        dossier = io._dossier()
+        self.assertEqual(dossier["writer_brief"], {"premise": "p"})
+        self.assertEqual(dossier["narrative_plan"], {"beats": [1]})
+        self.assertIn("phone", dossier["vocabulary"]["props"])
+        self.assertEqual(len(dossier["narration_by_scene"]), 2)

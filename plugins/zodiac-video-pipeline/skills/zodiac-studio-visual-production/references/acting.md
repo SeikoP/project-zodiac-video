@@ -23,3 +23,6 @@ Voice timing is measured and authoritative. Do not delay narration or captions f
 
 ## Move only when it carries the story
 Studio adds no camera move and no automatic entrance. A character changes pose by hard cut (a state change on its anchor); a body movement (the lean) is allowed once per character per scene, and only for the beat where one person acts ON the other or on a prop. Do not choose an event just to make something move: an event whose only effect is a nudge is dropped.
+
+## Acting parameters in plain words
+`degrees` tilts the figure about its feet (`lean` ≤ 20, `recoil` ≤ 12); `dx`/`dy` shift it in pixels; `settle` says what happens when the move ends: `return` goes back to the rest pose, `hold` stays leaned until a later explicit event returns it. A `hold` must be followed by an event for the same target that brings `degrees` and `dx` back to 0. Pick `return` for a flick of reaction and `hold` for a stance the story keeps (leaning in to defend someone).

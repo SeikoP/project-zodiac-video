@@ -36,3 +36,6 @@ Changing narration reopens content and visuals, including voice anchors and timi
 
 ## Approvals
 Voice listening, Visual Review and export approval are **genuine user actions**. No agent, validator, preview, build or CI result creates one. Report such gates as PENDING until the user acts. Human review also judges what machines cannot: faces, emotion, tone, whether the accent drawing matches its declared setting, and whether each Story Visual reads muted at phone size.
+
+## Frame-review finding codes
+When frames of a build are looked at, each scene is `ok` or `fix` with codes: `FOCUS_UNCLEAR` (the eye does not know where to land or who does what), `ACTOR_HIDDEN` (a character is cut, covered or too small), `COMPOSITION_UNBALANCED` (everything crowds one side or leaves dead space), `STATIC_SCENE` (nothing visibly changes between early and late frame), `PROP_IRRELEVANT` (a prop the story does not use), `TEXT_UNREADABLE` (lettering too small or low contrast at phone size), `STORY_MISMATCH` (the frame shows something other than the narration), `OTHER`. A `fix` carries ONE concrete instruction for the scene (what to change, in the scene's own words), never a restyle of the episode. The repair must answer the code: `FOCUS_UNCLEAR` is fixed by a contact or a reaction between the actors on the anchor, `STATIC_SCENE` by a second acting turn or a picture reveal.

@@ -121,28 +121,37 @@ def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str, used_moti
                              "place cannot be drawn from these parts; leave parts empty then."),
             "graphic_rules": GRAPHIC_RULES, "motifs_already_used_in_other_scenes": sorted(set(used_motifs)),
             "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
-    if planned:  # the episode plan, written after one read of the whole script: follow it unless it cannot be drawn
-        data["episode_plan_for_this_scene"] = planned
+    if planned:  # the production brief, written after one read of the whole script: follow it unless it cannot be drawn
+        data["production_brief_for_this_scene"] = planned
     return data
 
 
-PLAN_RULES = (
-    "Read the WHOLE script once, as a story, before any scene is built. Decide the story pictures of the episode: for every scene say what "
-    "the viewer must SEE besides the characters. A picture (graphic) makes ONE fact visible: stamp (a verdict word), meter (a level "
-    "between two sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), "
-    "tally (a count), chat_thread (messages). Choose 'none' for a scene only when the characters and props already carry it. Spread "
-    "the pictures across the episode (they are a rhythm, not decoration), never the same motif twice, and give each a 'fact': the "
-    "words of the script it makes visible. 'story_read' = in two sentences, what the script argues and where the pictures turn it.")
+BRIEF_RULES = (
+    "You are preparing the production brief BEFORE anything is built. Read every document in the data (the narration scene by scene, the "
+    "narrative plan, the writer brief, the episode scope, the voice direction) and the whole skill above, then write the brief exactly as "
+    "brief.md describes. Think about the episode as ONE argument: what it claims, where it turns, what the viewer must see to follow it "
+    "muted. Pictures (graphic) make ONE countable, comparable or written fact visible: stamp (a verdict word), meter (a level between two "
+    "sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a "
+    "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
+    "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese.")
 
 
-def plan_data(scenes: list[dict]) -> dict:
-    return {"scenes": scenes, "rules": PLAN_RULES}
+def brief_data(dossier: dict) -> dict:
+    return {"documents": dossier, "rules": BRIEF_RULES}
 
 
-def plan_schema(scene_ids: list[str]) -> dict:
+def brief_schema(scene_ids: list[str], cast_ids: list[str] | None = None) -> dict:
     text = lambda n: {"type": "string", "maxLength": n}  # noqa: E731
-    row = _object({"scene_id": _enum(scene_ids), "motif": _enum(("none",) + GRAPHIC_MOTIFS), "fact": text(120), "why": text(160)})
-    return _object({"story_read": text(400), "scenes": {"type": "array", "maxItems": len(scene_ids), "items": row}})
+    arr = lambda item, n: {"type": "array", "maxItems": n, "items": item}  # noqa: E731
+    scene = _object({
+        "scene_id": _enum(scene_ids), "beat": text(200), "viewer_read": text(200), "focus": text(120), "setting": text(120),
+        "props": arr(_object({"prop": text(40), "used_for": text(100)}), 3), "acting_turns": arr(text(120), 4),
+        "picture": _object({"motif": _enum(("none",) + GRAPHIC_MOTIFS), "fact": text(120), "why": text(160)})})
+    return _object({
+        "story_read": text(400), "tone": text(200),
+        "characters": arr(_object({"who": text(40), "relation": text(160), "wants": text(120)}), 6),
+        "scenes": {"type": "array", "minItems": len(scene_ids), "maxItems": len(scene_ids), "items": scene},
+        "rhythm": text(300), "rules_applied": arr(text(200), 6), "risks": arr(text(200), 6)})
 
 
 def _enum(values) -> dict:
