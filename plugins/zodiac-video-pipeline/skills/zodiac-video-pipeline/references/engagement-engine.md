@@ -67,7 +67,8 @@ The Engagement Review remains semantic, but it must now be written with the dete
 - **Hook value must be concrete.** Generic introductions such as “X has an interesting kind of…” are weak unless the actual anomaly/paradox/recognition/consequence lands immediately.
 - **Long runtime needs turns.** Runtime is not capped, but >90 seconds needs enough pull beats and reframes to justify the time.
 - **Trend fit is separate.** A trend or reference **cannot override** a Retention REVIEW. Trend fit may alter execution only after the story earns continuation on its own.
-- **Payoff is not a summary.** The ending should resolve/reframe/callback to setup rather than merely restating the Zodiac interpretation.
+- **Payoff is not a summary.** The ending should resolve/reframe/callback to setup rather than merely restating the Zodiac interpretation. A counted hook needs explicit accounting: every promised facet is delivered, later beats deepen those facets, and the ending changes their meaning instead of adding a new list.
+- **Narrative Economy Review:** use the deletion test and distinct semantic gain across all beats, not only consecutive ones. Diagnose topic drift, generic behavior, repeated explanation and skeleton-driven padding. Repair only material defects; preserve strong beats and stop if no defect remains. See `narration-skeleton.md` section 6c for evidence and revision diff guidance. No token minimum is an excuse for filler, and editorial review is not measured retention.
 
 
 ## Emergent narrative archetype

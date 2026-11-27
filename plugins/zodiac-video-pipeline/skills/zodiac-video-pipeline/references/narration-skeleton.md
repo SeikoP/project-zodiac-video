@@ -1,6 +1,6 @@
 # Narration skeleton — fixed shapes for a single-sign short-form script
 
-Scope: `single_sign` episodes only. `element_group`, `comparison` and `ranked_shortlist` keep their own shape. A skeleton is a **paragraph layout inside the one Story Shape** (`character_deconstruction`), never a second Story Shape. Paragraph breaks stay the scene seams, so do not split a paragraph to add scenes. The numbers are starting defaults to tune against real retention, not measured truths.
+Scope: `single_sign` episodes only. `element_group`, `comparison` and `ranked_shortlist` keep their own shape. A skeleton is a **paragraph layout inside the one Story Shape** (`character_deconstruction`), never a second Story Shape. Paragraph breaks stay the scene seams, so do not split a paragraph to add scenes. The numbers are starting defaults to tune against real retention, not measured truths. Lower bounds are editorial targets, never a reason to pad. Prefer a shorter complete beat and disclose a justified deviation; native structural diagnostics remain diagnostics and are not waived.
 
 ## 1. Choose the mode (one per script, never mixed)
 
@@ -19,9 +19,9 @@ Style source: `style-references/profile-structure-references.md` (three referenc
 | # | Slot | Job | Limit (tokens) |
 |---|------|-----|----------------|
 | 1 | Hook | Promise a counted list that costs the viewer something; the first sentence ends by token 16 | ≤24 |
-| 2-4 | Dealbreakers | "Thứ nhất / Thứ hai / Thứ ba": one thing each, with a concrete moment | 30-70 each |
+| 2-4 | Concept-led facets | "Thứ nhất / Thứ hai / Thứ ba": one promised thing each, with a concrete moment; dealbreakers only for warning concepts | 30-70 each |
 | 5 | Outer | How the sign looks from outside, then what is really going on (contrast marker) | 50-90 |
-| 6 | Dark | What the sign does once it has stopped caring (contrast marker) | 50-90 |
+| 6 | Dark / friction | A cost, uncomfortable limit or contradiction of the active concept (contrast marker); withdrawal only when it advances that concept | 50-90 |
 | 7 | Night | The private side (contrast marker) | 50-90 |
 | 8 | Warm | What the sign does for someone it trusts | 50-90 |
 | 9 | Turn | The one mechanism under all of it | 15-55 |
@@ -85,6 +85,21 @@ Name every limit you knowingly exceed and why. Local can run the same check: `no
 4. Trend search status: `searched: yes/no`, the function searched, and the outcome. "Không dùng" alone is not a record.
 5. Story Visual: the candidate review from `story-visual-direction.md` (at least two candidates, failed condition each).
 6. Motif: where it is carried (Writer Brief `motif_candidates`; never a field of Plan 2.1).
+
+## 6c. Narrative Economy Review (all modes)
+
+Run after a complete draft, before Content Review. A script can be structurally compliant and still feel stretched. Diagnose semantic density rather than maximizing duration or minimizing words. Do not prescribe a fixed reduction percentage or force a rewrite if no material defect exists.
+
+1. **Distinct semantic gain:** name what each beat adds (action, decision, consequence, contrast, reframe, payoff). Compare with the earlier beats, not merely the adjacent one. If removing a line or paragraph loses no useful meaning, shorten the line or redesign the paragraph while preserving the chosen shape. Do not add a fourth example just to reach a lower token target.
+2. **Concept-aligned friction:** in Long Profile, the Dark slot exposes a cost, tension, limit or contradiction within the selected concept. A romance about sincere love may reveal a limit of closeness while affection remains; do not jump to breakup, withdrawal or unrelated negativity merely to satisfy the slot. A warning/withdrawal concept may still use withdrawal when warranted.
+3. **Sign-specific behavior:** when an action such as apologizing, caring or helping could belong to any sign, replace it with a concrete choice that exposes the selected sign's supported mechanism. Keep the viewer's self-recognition and agency; humor comes from the choice and consequence, not an added unrelated joke. Test against a named alternate sign.
+4. **Explanatory compression:** once a behavior has proved a point, the Turn should add only the missing interpretation or a genuine reframe. Delete signposting, redundant setups, restatement and explanatory tails; do not cut an earned emotional or comic beat merely to shorten runtime.
+5. **Hook-to-payoff accounting:** if the hook promises N things, identify exactly which early facets deliver them. Later paragraphs deepen, challenge or resolve those facets rather than silently promise a new list. The ending resolves the promise with changed meaning, not a generic moral or obligatory recap. A short callback to the promised items is useful only if it earns the final turn.
+6. **Minimal repair and stop rule:** mark beats keep / tighten / redesign with the exact weak excerpt and reason; preserve strong or already accepted wording unless the premise changes. A user-requested revision shows exact before/after changed excerpts (or a unified diff), affected beat IDs and reasons; verify counts from the actual text using the same stated token method for both drafts. No invented retention score or measured duration. Re-check anchors, performance intent, motif and Story Visual candidate decisions for every changed beat, and do not reuse approvals tied to older bytes.
+
+Regression scenarios (mechanisms only, not new scripts): a warm romance draft loses momentum by abruptly switching to a breakup; keep the friction within the love dynamic. A generic apology illustrates little about a pride-centered sign; show an observable cost to the self-image instead. A warm beat already makes the point; the Turn should not explain it three more ways. If the draft has no such defect, keep it unchanged. These are editorial checks, not fixed sign-to-story rules or additional mandatory JSON fields.
+
+Content Review reports the materially weak beats and repairs (or none found), actual paragraph counts, and remaining limitations. The review does not imply that TTS or audience retention has been measured.
 
 ## 7. Trend phrase pass (optional, at most two phrases)
 

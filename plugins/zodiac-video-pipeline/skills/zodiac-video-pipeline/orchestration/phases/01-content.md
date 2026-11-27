@@ -54,7 +54,7 @@ Draft from the selected concept, Story Spine, Narrative Motif when present, seco
 
 After the prose exists, bind the final narration back to the Narrative Plan before Content Review. Fresh Web handoffs use Narrative Plan `version: "2.1"` with non-empty `beats`; each performance beat carries an exact `voice_anchor`, `occurrence` when an anchor repeats, and `performance={delivery,energy,emotion,pace,emphasis,reason}`. These directions are approved creative intent. Local may map them onto later scene boundaries but must not invent missing performance semantics.
 
-Do not write to pass a validator. Editorial review happens after a real draft exists; the runnable beat binding is checked only after drafting and before approval.
+Do not write to pass a validator. Editorial review happens after a real draft exists; the runnable beat binding is checked only after drafting and before approval. Run the Narrative Economy Review in `references/narration-skeleton.md` section 6c: use the deletion test, concept-aligned friction, sign-specific choices, explanatory compression and counted hook payoff. Preserve strong beats; lower length targets never justify filler. On revision show the changed excerpts and reasons, then rebind affected anchors, performance, motif and Story Visual before approval.
 
 There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one, except that a `single_sign` script follows one mode of `references/narration-skeleton.md` (long profile by default) and its band. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
 

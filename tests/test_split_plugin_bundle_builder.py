@@ -244,6 +244,34 @@ class SplitPluginBundleTests(unittest.TestCase):
         self.assertIn("per-paragraph token table", skill)
         self.assertIn("trend search status", skill)
 
+    def test_web_narrative_economy_review_is_packaged_and_reachable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "web.zip"
+            build_profile(ROOT, "web", destination)
+            with ZipFile(destination) as archive:
+                def read(suffix):
+                    return next(archive.read(n).decode("utf-8").lower()
+                                for n in archive.namelist() if n.endswith(suffix))
+                skill = read("zodiac-video-web/SKILL.md")
+                skeleton = read("references/narration-skeleton.md")
+                engagement = read("references/engagement-engine.md")
+                phase = read("orchestration/phases/01-content.md")
+        for doc in (skill, skeleton, engagement, phase):
+            self.assertIn("narrative economy review", doc)
+            self.assertIn("deletion test", doc)
+        for phrase in ("concept-led facets", "concept-aligned friction",
+                       "sign-specific behavior", "explanatory compression",
+                       "hook-to-payoff accounting", "minimal repair and stop rule",
+                       "lower bounds are editorial targets",
+                       "if the draft has no such defect, keep it unchanged",
+                       "native structural diagnostics remain diagnostics"):
+            self.assertIn(phrase, skeleton)
+        for phrase in ("before/after diff", "refresh all affected anchors",
+                       "if no material defect exists, retain the exact draft",
+                       "no new artifact"):
+            self.assertIn(phrase, skill)
+        self.assertIn("zodiac-phase1-handoff@2", skill)
+
     def test_plugin_manifests_share_one_version(self):
         base = ROOT / "plugins/zodiac-video-pipeline"
         versions = {
