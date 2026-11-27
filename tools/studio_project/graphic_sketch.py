@@ -13,7 +13,7 @@ from .story_visual_art import CORAL, GOLD, INK, PAPER, TEAL, _text, reject
 
 CARD = "#E9E6DF"
 W, H = 960, 630  # the aspect of the story-visual band (640x420)
-SHAPES = ("box", "circle", "line", "arrow", "text", "face", "check", "cross", "heart", "star", "scribble")
+SHAPES = ("box", "circle", "line", "arrow", "text", "face", "check", "cross", "heart", "star", "scribble", "wedge", "phone", "pillow", "cup")
 COLORS = {"ink": INK, "paper": PAPER, "teal": TEAL, "coral": CORAL, "gold": GOLD, "card": CARD}
 MOODS = ("happy", "flat", "angry", "sad", "surprised")
 MAX_PARTS, MAX_STEPS, MAX_TEXTS = 18, 4, 6
@@ -68,7 +68,17 @@ def hero_states(spec) -> list[list[dict]]:
     states = spec.get("states") if set(spec) == {"type", "states"} else None
     if not isinstance(states, list) or not 2 <= len(states) <= 4 or any(not isinstance(s, dict) or set(s) != {"parts"} for s in states):
         reject("hero_states")
-    return [_check_parts(s["parts"], low=2, single_step=True) for s in states]
+    drawn = [_check_parts(s["parts"], low=2, single_step=True) for s in states]
+    for number, parts in enumerate(drawn, 1):  # the object is the picture: it fills the canvas, it is not a speck in a corner
+        left, right = min(p["x"] for p in parts), max(p["x"] + p["w"] for p in parts)
+        top, low = min(p["y"] for p in parts), max(p["y"] + p["h"] for p in parts)
+        if (right - left) < W * .55 and (low - top) < H * .55:
+            reject(f"hero_too_small: state {number} spans {right - left}x{low - top} of {W}x{H}; scale the object up until it covers at least 55% of the width or of the height")
+    key = lambda p: (p["shape"], p["x"], p["y"], p["w"], p["h"], p["color"], p["text"])  # noqa: E731
+    for number in range(1, len(drawn)):  # a state that looks like the one before is not a change the viewer can see
+        if len({key(p) for p in drawn[number - 1]} ^ {key(p) for p in drawn[number]}) < 4:
+            reject(f"hero_states_alike: state {number + 1} differs from state {number} by fewer than 2 parts; show what the words changed (a piece cut away, moved, crossed out, added)")
+    return drawn
 
 
 def steps(spec) -> int:
@@ -140,6 +150,22 @@ def draw(L, spec, step):
             out.append(L.draw(p["text"], cx, y + h * .78, size, ink, "center"))
         elif shape == "face":
             out.append(_face(p, cx, cy, fill))
+        elif shape == "wedge":  # a slice of a cake or pie, side view, with its top face and a topping dot
+            out.append(f'<path d="M{x} {y + h} L{x + w} {y + h} L{x + w * .88} {y + h * .5} Q{x + w * .45} {y - h * .02} {x + w * .02} {y + h * .72} Z" fill="{fill}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+                       f'<path d="M{x + w * .1} {y + h * .8} L{x + w * .9} {y + h * .8}" stroke="{INK}" stroke-width="4" stroke-linecap="round" fill="none"/>'
+                       f'<circle cx="{x + w * .5}" cy="{y + h * .3}" r="{max(6, min(w, h) * .07)}" fill="{CORAL}" stroke="{INK}" stroke-width="3"/>')
+        elif shape == "phone":
+            out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{min(w, h) // 6}" fill="{fill}" stroke="{INK}" stroke-width="6"/>'
+                       f'<rect x="{x + w * .1}" y="{y + h * .08}" width="{w * .8}" height="{h * .74}" rx="8" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>'
+                       f'<circle cx="{cx}" cy="{y + h * .91}" r="{max(4, min(w, h) * .04)}" fill="{INK}"/>')
+        elif shape == "pillow":
+            out.append(f'<path d="M{x + w * .06} {y + h * .12} Q{cx} {y - h * .06} {x + w * .94} {y + h * .12} Q{x + w * 1.02} {cy} {x + w * .94} {y + h * .88} '
+                       f'Q{cx} {y + h * 1.06} {x + w * .06} {y + h * .88} Q{x - w * .02} {cy} {x + w * .06} {y + h * .12} Z" fill="{fill}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+                       f'<path d="M{x + w * .06} {y + h * .12} l{w * .08} {h * .1} M{x + w * .94} {y + h * .12} l{-w * .08} {h * .1} M{x + w * .06} {y + h * .88} l{w * .08} {-h * .1} M{x + w * .94} {y + h * .88} l{-w * .08} {-h * .1}" '
+                       f'stroke="{INK}" stroke-width="4" stroke-linecap="round" fill="none"/>')
+        elif shape == "cup":
+            out.append(f'<path d="M{x + w * .08} {y + h * .12} L{x + w * .74} {y + h * .12} L{x + w * .66} {y + h * .92} Q{x + w * .4} {y + h} {x + w * .16} {y + h * .92} Z" fill="{fill}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+                       f'<path d="M{x + w * .74} {y + h * .28} Q{x + w * 1.02} {y + h * .3} {x + w * .98} {y + h * .52} Q{x + w * .94} {y + h * .7} {x + w * .7} {y + h * .68}" stroke="{INK}" stroke-width="6" fill="none" stroke-linecap="round"/>')
         elif shape == "check":
             out.append(f'<path d="M{x} {y + h * .55} L{x + w * .38} {y + h} L{x + w} {y}" stroke="{ink}" stroke-width="16" '
                        f'stroke-linecap="round" stroke-linejoin="round" fill="none"/>')

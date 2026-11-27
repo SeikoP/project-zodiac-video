@@ -47,13 +47,13 @@ if __name__ == "__main__":
 
 
 def hero_state(extra=()):
-    return {"parts": [dict(part("circle", 200, 200, 400, 300, "card"), step=1), dict(part("scribble", 240, 330, 320, 40, "ink"), step=1), *extra]}
+    return {"parts": [dict(part("circle", 100, 150, 760, 380, "card"), step=1), dict(part("scribble", 240, 300, 480, 60, "ink"), step=1), *extra]}
 
 
 HERO = {"type": "hero", "states": [
     hero_state(),
-    hero_state([part("line", 400, 200, 0, 300, "ink")]),
-    {"parts": [part("circle", 100, 260, 260, 220, "card"), part("circle", 540, 280, 260, 220, "card"), part("arrow", 380, 360, 120, 0, "coral")]}]}
+    {"parts": [part("wedge", 60, 180, 400, 330, "gold"), part("wedge", 500, 200, 400, 310, "gold"), part("line", 480, 160, 0, 380, "ink")]},
+    {"parts": [part("wedge", 60, 180, 400, 330, "gold"), part("cup", 520, 160, 330, 360, "card"), part("arrow", 440, 360, 120, 0, "coral")]}]}
 
 
 class HeroTests(unittest.TestCase):
@@ -66,7 +66,8 @@ class HeroTests(unittest.TestCase):
     def test_bad_heroes_are_refused(self):
         for bad in ({"type": "hero", "states": HERO["states"][:1]},
                     {"type": "hero", "states": [hero_state(), {"parts": [dict(p, step=2) for p in hero_state()["parts"]]}]},
-                    {"type": "hero", "states": [hero_state(), {"parts": hero_state()["parts"][:1]}]}):
+                    {"type": "hero", "states": [hero_state(), {"parts": hero_state()["parts"][:1]}]},          # too alike: nothing changed
+                    {"type": "hero", "states": [hero_state(), {"parts": [part("circle", 300, 250, 120, 120, "card"), part("box", 320, 270, 60, 60, "gold")]}]}):  # a speck
             with self.assertRaises(ValueError):
                 story_visual_art.visual_svg(bad)
 
