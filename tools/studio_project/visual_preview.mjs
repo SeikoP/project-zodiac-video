@@ -111,7 +111,7 @@ export function renderEpisode(rows,assets,themeId,fps,runtime,authoredPresentati
   for(const {scene,time}of rows){
     if(time.startMs!==cursor||time.endMs<=time.startMs)throw Error('EXPORT_SCENE_TIMING_GAP');
     cursor=time.endMs;
-    const preview=renderPreview(scene,assets,{...time,fps},themeId,runtime.gsap,runtime.font,authoredPresentation,rows[0].scene.id===scene.id?opening:null);
+    const preview=renderPreview(scene,assets,{...time,fps},themeId,runtime.gsap,runtime.font,authoredPresentation,rows[0].scene.id===scene.id?opening:null,rows[0].scene.id===scene.id?rows.map(r=>r.scene):null);
     if(preview.unsupported_motions.length)throw Error('EXPORT_MOTION_UNSUPPORTED');
     models.push({model:preview.render_model,start:time.startMs/1000,end:time.endMs/1000});sourceMap.push(...preview.source_map);
     captionRows.push({time,pages:preview.render_model.captions});

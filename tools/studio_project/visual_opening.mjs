@@ -66,16 +66,16 @@ export function openingHtml(opening,palette,scene=null,assets={},themeId='light'
  const seen=new Set();
  const propSpots=[{x:22,y:1130,w:175,h:215,r:-8},{x:885,y:640,w:150,h:180,r:10},{x:22,y:830,w:140,h:170,r:-6}];
  const props=[];
- for(const sc of (episodeScenes??(scene?[scene]:[]))){
-  for(const e of sc.entities??[]){
-   if(props.length>=propSpots.length)break;
-   if(!(e.visual_role==='interactive_prop'&&e.kind==='object')&&e.kind!=='prop')continue;
-   const st=Object.values(e.states??{}).find(s=>s.visible!==false&&assets[s.asset]?.svg);
-   if(!st||seen.has(st.asset))continue;
-   seen.add(st.asset);
-   const p=propSpots[props.length];
-   props.push(`<img data-cover-native-prop="${escape(e.id)}" draggable="false" src="data:image/svg+xml;base64,${Buffer.from(resolvePaletteSvg(assets[st.asset].svg,themeId)).toString('base64')}" style="position:absolute;left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px;object-fit:contain;transform:rotate(${p.r}deg)"/>`);
-  }
+ const physical=e=>(e.visual_role==='interactive_prop'&&e.kind==='object'&&!String(e.id).startsWith('graphic_'))||e.kind==='prop';
+ const candidates=[];
+ for(const test of [physical])for(const sc of (episodeScenes??(scene?[scene]:[])))for(const e of sc.entities??[])if(test(e))candidates.push(e);
+ for(const e of candidates){
+  if(props.length>=propSpots.length)break;
+  const st=Object.values(e.states??{}).find(s=>s.visible!==false&&assets[s.asset]?.svg);
+  if(!st||seen.has(st.asset))continue;
+  seen.add(st.asset);
+  const p=propSpots[props.length];
+  props.push(`<img data-cover-native-prop="${escape(e.id)}" draggable="false" src="data:image/svg+xml;base64,${Buffer.from(resolvePaletteSvg(assets[st.asset].svg,themeId)).toString('base64')}" style="position:absolute;left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px;object-fit:contain;transform:rotate(${p.r}deg)"/>`);
  }
  const prop=props.join('');
  // Cover title changes semantics from hook to the current episode's topic, but preserves

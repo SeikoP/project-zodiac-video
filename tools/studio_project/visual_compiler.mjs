@@ -261,7 +261,7 @@ export async function buildEpisode(input){
     const time=measured.find(t=>t.scene_id===scene.id),deps=[...new Set(scene.entities.flatMap(e=>Object.values(e.states).map(s=>assetMap[s.asset].geometry_node)))];
     const geometry=await node('scene:'+scene.id,{scene,time},deps,async()=>({scene,time,asset_hashes:Object.fromEntries(scene.entities.flatMap(e=>Object.values(e.states).map(s=>[s.asset,assetMap[s.asset].source_sha256])))}));
     const sceneOpening=scene.id===projections.production.scenes[0].id?intent.opening??null:null;
-    const appearance=await node('appearance:'+scene.id,{theme:THEMES[theme],font_sha256:runtime.font.sha256,gsap_sha256:digest(runtime.gsap),opening:sceneOpening},['scene:'+scene.id],async()=>renderPreview(geometry.scene,assetMap,geometry.time,theme,runtime.gsap,runtime.font,{},sceneOpening));
+    const appearance=await node('appearance:'+scene.id,{theme:THEMES[theme],font_sha256:runtime.font.sha256,gsap_sha256:digest(runtime.gsap),opening:sceneOpening,cover_props:sceneOpening?projections.production.scenes.map(x=>x.id+':'+x.entities.map(e=>e.id+':'+Object.values(e.states).map(t=>t.asset).join('|')).join(',')):null},['scene:'+scene.id],async()=>renderPreview(geometry.scene,assetMap,geometry.time,theme,runtime.gsap,runtime.font,{},sceneOpening,sceneOpening?projections.production.scenes:null));
     previewBytes+=Buffer.byteLength(appearance.html);assert(previewBytes<=32*1024*1024,'VISUAL_EPISODE_PREVIEW_BUDGET');
     const file=scene.id+'.html';await writeFile(path.join(out,file),appearance.html);
     const required_nodes=scene.entities.flatMap(e=>Object.keys(e.states).map(s=>'state:'+e.id+':'+s)).concat(scene.events.map(e=>'event:'+e.id));
