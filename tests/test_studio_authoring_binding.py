@@ -61,3 +61,12 @@ class AuthoringBindingTests(unittest.TestCase):
         text, _ = bind_proposal(json.dumps(self.proposal), self.context)
         entity = json.loads(text)["payload"]["intent"]["scenes"][0]["entities"][0]
         self.assertEqual(entity, {"id": "p", "kind": "object", "states": {"idle": {"asset": "phone"}}})
+
+    def test_the_unique_asset_budget_matches_the_states_the_cast_defines(self):
+        intent = self.proposal["payload"]["intent"]
+        intent["cast"] = [{"entity_id": "libra", "asset_budget": {"max_unique_states": 3}, "states": {k: {} for k in "abcdef"}},
+                          {"entity_id": "partner", "states": {k: {} for k in "ab"}}]
+        text, changed = bind_proposal(json.dumps(self.proposal), self.context)
+        cast = json.loads(text)["payload"]["intent"]["cast"]
+        self.assertEqual([m["asset_budget"]["max_unique_states"] for m in cast], [6, 2])
+        self.assertIn("asset_budget:libra", changed)

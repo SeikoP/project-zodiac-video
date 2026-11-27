@@ -318,6 +318,13 @@ def bind_proposal(text, context):
     changed += _substitute_missing_parts(intent)
     changed += ["cast:" + c for c in repair_cast(intent.get("cast"), catalog()["components"])]
     changed += _repair_opening(intent, context)
+    for member in intent.get("cast") or []:  # the skeleton asks for 4-6 states per member; the unique-asset budget is Core's to match them
+        states = member.get("states") if isinstance(member, dict) else None
+        if isinstance(states, dict) and states:
+            budget = member.setdefault("asset_budget", {})
+            if not isinstance(budget.get("max_unique_states"), int) or budget["max_unique_states"] < len(states):
+                budget["max_unique_states"] = len(states)
+                changed.append("asset_budget:" + str(member.get("entity_id")))
     ranges = {row["id"]: row["narration_range"] for row in context["scene_ranges"]}
     for scene in intent.get("scenes", []):
         if scene.get("id") in ranges and scene.get("narration_range") != ranges[scene["id"]]:
