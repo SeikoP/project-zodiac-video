@@ -28,9 +28,10 @@ PLACEMENT: dict[str, dict[str, dict]] = {
                    "companion": {"x": 640, "y": 490, "width": 400, "height": 800}},
     "reaction-closeup": {"subject": {"x": 265, "y": 260, "width": 550, "height": 1100}},
     "caption-payoff": {"subject": {"x": 290, "y": 300, "width": 500, "height": 1000}},
-    "three-person-comparison": {"lead": {"x": 375, "y": 370, "width": 330, "height": 660},
-                                "peer_a": {"x": 40, "y": 630, "width": 330, "height": 660},
-                                "peer_b": {"x": 710, "y": 630, "width": 330, "height": 660}},
+    # three people stand side by side on one floor line (smaller, with room between them), none hangs above the others
+    "three-person-comparison": {"lead": {"x": 390, "y": 690, "width": 300, "height": 600},
+                                "peer_a": {"x": 30, "y": 690, "width": 300, "height": 600},
+                                "peer_b": {"x": 750, "y": 690, "width": 300, "height": 600}},
 }
 STORY_FIELD = 1400
 STORY_BAND_BOTTOM = 560  # a story visual owns y 90-510; the actors are moved up under it
