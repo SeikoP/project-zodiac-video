@@ -74,3 +74,24 @@ test('situation: moments that open alike read as a list',()=>{const a=[...SIT];a
 test('situation: no moment where outside and inside disagree is flagged',()=>{const a=SIT.map(p=>p.replace('Nhưng','Và').replace('nhưng','và').replace('mà cũng','và cũng'));assert.ok(codes(sit(a)).includes('TOO_FEW_CONTRASTS'));});
 test('situation: an ending that forgets the opening image is flagged',()=>{const a=[...SIT];a[a.length-1]='Điểm chín về cả nhóm và mọi người rủ nhau đi ăn tối thật vui vẻ.';assert.ok(codes(sit(a)).includes('CLOSE_NO_CALLBACK'));});
 test('situation: a short sketch is rejected as too short in total',()=>{const a=[SIT[0],...M.slice(0,6).map(p=>p.split('.')[0]+'. Rồi ai nấy về.'),SIT.at(-2),SIT.at(-1)];assert.ok(codes(sit(a)).includes('TOTAL_SIZE')||codes(sit(a)).includes('MOMENT_SIZE'));});
+
+import {checkLongProfile} from './validate-narration-skeleton.mjs';
+const LONG=[
+ "Ba điều khiến Sư Tử gạch tên bạn mà không nói một lời. Phạm cả ba thì bạn hết cứu.",
+ "Thứ nhất, đừng khen Sư Tử cho có. Họ có một cái ăng-ten riêng để bắt lời nịnh. Bạn khen áo đẹp mà mắt còn dán vào điện thoại, họ nghe ra ngay. Sư Tử không ghét lời khen. Họ ghét lời khen không có người ở trong.",
+ "Thứ hai, đừng cướp sân khấu của họ giữa chừng. Sư Tử đang kể dở mà bạn chen vào kể chuyện hay hơn, họ vẫn cười, vẫn gật. Nhưng trong cuốn sổ của họ, bạn vừa bị ghi một dòng đỏ.",
+ "Thứ ba, đừng chê Sư Tử trước mặt người khác. Một câu góp ý giữa đám đông nặng hơn mười câu nói riêng. Họ sẽ cười và bảo ý hay đấy. Rồi nhớ đúng câu đó thêm ba tháng nữa. Còn nếu bạn chê đúng, họ sẽ về nhà sửa thật. Nhưng đừng chê ở chỗ có khán giả.",
+ "Bề ngoài, Sư Tử là người dẫn đầu. Đặt bàn trước, chốt quán trước, nói to nhất nhóm. Nhìn tưởng độc đoán. Nhưng thật ra họ đang đứng đó chờ một cái gật đầu. Chưa ai gật, họ hỏi lại lần hai, lần ba, giọng vẫn vui. Cái vẻ tự tin ấy giống một sân khấu dựng sẵn. Đèn sáng, nhạc to, và họ tìm đúng một gương mặt ở hàng ghế dưới đang nhìn mình. Chỉ cần ai đó giơ ngón cái lên là họ sáng cả buổi.",
+ "Khi đã thất vọng, Sư Tử không làm ầm. Đó mới là chỗ đáng sợ. Họ vẫn chào, vẫn cười xã giao, nhưng bạn thử rủ đi ăn xem. Câu trả lời sẽ là: dạo này mình bận. Bạn nhắn xin lỗi, họ thả tim. Đúng một cái tim, không chữ nào. Ba lần bận liền là bạn đã bị mời ra khỏi vòng trong. Còn lý do thì chẳng ai kể, vì với Sư Tử, giải thích tức là xin được hiểu, mà họ không xin.",
+ "Ban ngày Sư Tử dẫn cả nhóm. Nhưng nửa đêm, họ nằm nhớ lại buổi sáng: lúc mình nói có ai cười chưa, chuyện mình kể có nhạt không. Người dẫn đầu cả ngày hóa ra cũng cần ai đó xác nhận là mình ổn. Họ sẽ không bao giờ nhắn: tôi cần bạn. Họ chỉ nhắn: đang làm gì đấy? Họ lướt lại tin nhắn cũ, đếm xem ai đã trả lời mình nhanh nhất. Rồi ngồi chờ.",
+ "Nhưng nếu bạn qua được bài kiểm tra, Sư Tử sẽ đối xử với bạn như người quan trọng nhất đời họ. Bao cả bàn không chớp mắt. Nhớ sinh nhật bạn, nhớ cả món bạn kiêng. Bạn khóc là họ bỏ hết mọi việc ngồi nghe. Bạn nói muốn học nghề mới, họ gửi luôn ba khóa học và một lời hứa sẽ ngồi học cùng. Cái hào phóng ấy không phải để khoe. Đó là cách họ nói: tôi quý bạn, và tôi muốn bạn thấy điều đó.",
+ "Chỉ có một điều họ xin lại: hãy thấy công của họ. Quên cảm ơn một câu, họ ghi sổ đến lần gặp sau. Họ không tính tiền. Họ tính xem bạn có nhìn thấy không.",
+ "Nên ba điều kia thực ra chỉ là một. Đừng làm Sư Tử thấy mình vô hình. Làm được, bạn không bị gạch tên. Bạn nằm ở cuốn sổ còn lại, cuốn dành cho người họ nhớ lâu."
+];
+const lng=a=>checkLongProfile(a.join('\n\n'));
+test('long profile: dealbreakers, outer, dark, night, warm, turn and a returning close pass',()=>{const r=lng(LONG);assert.equal(r.status,'PASS',JSON.stringify(r.issues));assert.equal(r.mode,'long-profile');});
+test('long profile: a different paragraph count stops at the slot check',()=>{assert.deepEqual(codes(lng(LONG.slice(0,7))),['SLOT_COUNT']);});
+test('long profile: a dealbreaker that drops its ordinal breaks the promised number',()=>{const a=[...LONG];a[2]=a[2].replace('Thứ hai, ','Và rồi ');assert.ok(codes(lng(a)).includes('DEALBREAKER_ORDINAL'));});
+test('long profile: a script cut to the six-paragraph length is too short in total',()=>{const a=LONG.map(p=>p.split('. ').slice(0,2).join('. ')+'.');assert.ok(codes(lng(a)).includes('TOTAL_SIZE'));});
+test('long profile: an ending that forgets the hook is flagged',()=>{const a=[...LONG];a[9]='Nên hãy nhớ kiên nhẫn một chút với người bạn yêu quý, vì ai cũng có lúc cần được lắng nghe thật lòng.';assert.ok(codes(lng(a)).includes('CLOSE_NO_CALLBACK'));});
+test('long profile: no outside-versus-inside marker in the outer section is flagged',()=>{const a=[...LONG];a[4]=a[4].replace('Nhưng thật ra','Và');assert.ok(codes(lng(a)).includes('FACET_NO_CONTRAST'));});

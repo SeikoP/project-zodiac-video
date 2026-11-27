@@ -41,6 +41,25 @@ Nên lần sau Song Tử im lặng, đừng hỏi họ giận không. Hãy hỏi
 
 The hook says "im lặng" and "chấm điểm"; the close returns to both with a changed meaning.
 
+## Long profile mode (the shape of the three reference subtitles)
+
+Use for a single-sign profile that must run about two minutes. The three reference subtitles (Bạch Dương, Bọ Cạp, Song Tử; 121-139 seconds, 560-680 tokens) share one order: the things the sign cannot stand, outside versus inside, the dark side, the warm side, one closing line. This mode fixes that order. Check with `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=long-profile`.
+
+| # | Slot | Job | Limit (tokens) |
+|---|------|-----|----------------|
+| 1 | Hook | Promise a counted list that costs the viewer something | ≤24 |
+| 2-4 | Dealbreakers | "Thứ nhất / Thứ hai / Thứ ba": one thing each, with a concrete moment | 30-70 each |
+| 5 | Outer | How the sign looks from outside, then what is really going on (contrast marker required) | 50-130 |
+| 6 | Dark | What the sign does when it has given up on you (contrast marker required) | 50-130 |
+| 7 | Night | The private side (contrast marker required) | 50-130 |
+| 8 | Warm | What the sign does for someone it trusts | 50-130 |
+| 9 | Turn | The one mechanism under all of it | 15-55 |
+| 10 | Close | Returns to the hook's words with a changed meaning; no goodbye | ≤55 |
+
+Whole script 450-750 tokens (about 100-165 seconds at 270 tokens/minute). Sentences up to 22 tokens. Over 120 seconds the plugin's own duration check (`short-form-duration.mjs`) still requires an editorial review or `duration-exception.json`; that exception needs the user's own review quote and is never written for them.
+
+Foreign words such as "online" stay in the narration. Declare their reading in `spoken-performance-plan.json` (`pronunciation`) instead of rewriting the line.
+
 ## Situation mode (one sign, one relatable situation)
 
 Use when the video is "Khi <cung> + <tình huống ai cũng từng gặp>" (a group project, a parents' meeting, an exam) instead of a trait profile. The title is the hook; the sign walks through the situation in time order, one concrete moment per paragraph, and each moment goes a step further than the last. Check with `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=situation`.

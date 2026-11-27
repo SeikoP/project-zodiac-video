@@ -91,16 +91,60 @@ export function checkSituation(text,limits=SITUATION){
  });
  return report(paras,count,total,issues,'situation');
 }
+// Long-profile mode: the shape shared by the three reference subtitles (dealbreakers, outer vs inner, dark side, warm side, one closing line).
+export const LONG_PROFILE={
+ slots:['hook','dealbreaker1','dealbreaker2','dealbreaker3','outer','dark','night','warm','turn','close'],
+ hook_max_tokens:24,
+ dealbreaker_tokens:[30,70],
+ ordinals:['thứ nhất','thứ hai','thứ ba'],
+ facet_tokens:[50,130],
+ contrast_slots:['outer','dark','night'],
+ turn_tokens:[15,55],
+ close_max_tokens:55,
+ total_tokens:[450,750],
+ sentence_max_tokens:22,
+ min_callback_words:2,
+ topic_word_share:0.4
+};
+export function checkLongProfile(text,limits=LONG_PROFILE){
+ const paras=String(text).replace(/\r\n/g,'\n').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+ const issues=[],add=(code,where,detail)=>issues.push({code,where,detail});
+ const count=paras.map(p=>words(p).length),total=count.reduce((a,b)=>a+b,0);
+ if(paras.length!==limits.slots.length){add('SLOT_COUNT','all','need exactly '+limits.slots.length+' paragraphs ('+limits.slots.join(', ')+'); found '+paras.length);return report(paras,count,total,issues,'long-profile');}
+ const at=Object.fromEntries(limits.slots.map((s,i)=>[s,i]));
+ if(count[at.hook]>limits.hook_max_tokens)add('HOOK_LONG','hook',count[at.hook]+' tokens, max '+limits.hook_max_tokens);
+ ['dealbreaker1','dealbreaker2','dealbreaker3'].forEach((s,k)=>{
+  const n=count[at[s]];
+  if(n<limits.dealbreaker_tokens[0]||n>limits.dealbreaker_tokens[1])add('DEALBREAKER_SIZE',s,n+' tokens, need '+limits.dealbreaker_tokens.join('-'));
+  if(!(' '+words(paras[at[s]]).slice(0,3).join(' ')+' ').includes(' '+limits.ordinals[k]+' '))add('DEALBREAKER_ORDINAL',s,'open with "'+limits.ordinals[k]+'" so the number promised in the hook is kept');
+ });
+ for(const s of ['outer','dark','night','warm']){const n=count[at[s]];if(n<limits.facet_tokens[0]||n>limits.facet_tokens[1])add('FACET_SIZE',s,n+' tokens, need '+limits.facet_tokens.join('-'));}
+ for(const s of limits.contrast_slots)if(!CONTRAST.some(c=>has(paras[at[s]],c)))add('FACET_NO_CONTRAST',s,'no outside-versus-inside marker ('+CONTRAST.join(', ')+')');
+ if(count[at.turn]<limits.turn_tokens[0]||count[at.turn]>limits.turn_tokens[1])add('TURN_SIZE','turn',count[at.turn]+' tokens, need '+limits.turn_tokens.join('-'));
+ if(count[at.close]>limits.close_max_tokens)add('CLOSE_LONG','close',count[at.close]+' tokens, max '+limits.close_max_tokens);
+ if(total<limits.total_tokens[0]||total>limits.total_tokens[1])add('TOTAL_SIZE','all',total+' tokens, need '+limits.total_tokens.join('-'));
+ const sets=paras.map(p=>new Set(words(p)));
+ const topic=new Set([...new Set(sets.flatMap(s=>[...s]))].filter(w=>sets.filter(s=>s.has(w)).length>=Math.ceil(limits.topic_word_share*paras.length)));
+ const shared=[...sets[at.hook]].filter(w=>sets[at.close].has(w)&&!STOP.has(w)&&!topic.has(w));
+ if(shared.length<limits.min_callback_words)add('CLOSE_NO_CALLBACK','close','shares '+shared.length+' non-topic words with the hook, need '+limits.min_callback_words);
+ for(const phrase of CTA)if(has(paras[at.close],phrase))add('CLOSE_CTA','close','"'+phrase+'" turns the ending into a goodbye; keep any call to action in the caption');
+ paras.forEach((p,i)=>{
+  for(const phrase of FILLER)if(has(p,phrase))add('FILLER',limits.slots[i],'"'+phrase+'" is read aloud by TTS and adds no information');
+  for(const s of p.split(/[.!?…]+|\n/).map(x=>x.trim()).filter(Boolean)){const n=words(s).length;if(n>limits.sentence_max_tokens)add('SENTENCE_LONG',limits.slots[i],n+' tokens: "'+s.slice(0,60)+'…"');}
+ });
+ return report(paras,count,total,issues,'long-profile');
+}
 function report(paras,count,total,issues,mode='profile'){
  return {format:'zodiac-narration-skeleton@1',mode,status:issues.length?'REVIEW':'PASS',paragraphs:paras.length,tokens_per_paragraph:count,total_tokens:total,estimated_seconds:Math.round(total/4.5),issues,not_an_approval:true};
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
-  const input=process.argv[2];if(!input){console.error('Usage: node validate-narration-skeleton.mjs <workspace|narration.txt> [--mode=situation]');process.exit(2);}
+  const input=process.argv[2];if(!input){console.error('Usage: node validate-narration-skeleton.mjs <workspace|narration.txt> [--mode=profile|situation|long-profile]');process.exit(2);}
   const file=(await stat(input)).isFile()?input:await stat(path.join(input,'.authoring/narration.txt')).then(()=>path.join(input,'.authoring/narration.txt')).catch(e=>{if(e.code==='ENOENT')return path.join(input,'narration.txt');throw e;});
-  const situation=process.argv.includes('--mode=situation')||process.argv.includes('situation');
-  const result=(situation?checkSituation:checkSkeleton)(await readFile(file,'utf8'));
+  const mode=(process.argv.find(a=>a.startsWith('--mode='))??'--mode=profile').slice(7);
+  const check={profile:checkSkeleton,situation:checkSituation,'long-profile':checkLongProfile}[mode];if(!check){console.error('Unknown mode '+mode);process.exit(2);}
+  const result=check(await readFile(file,'utf8'));
   console.log(JSON.stringify(result,null,2));
   if(result.status!=='PASS')process.exitCode=1;
  }catch(e){console.error(e.message);process.exitCode=2;}
