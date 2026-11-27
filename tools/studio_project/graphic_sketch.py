@@ -20,12 +20,12 @@ MAX_PARTS, MAX_STEPS, MAX_TEXTS = 18, 4, 6
 FIELDS = {"shape", "x", "y", "w", "h", "color", "text", "step"}
 
 
-def parts_of(spec) -> list[dict]:
+def _check_parts(raw_parts, *, low: int, single_step: bool) -> list[dict]:
     """The drawing, checked part by part: nothing outside the canvas, the palette or the part list reaches the file."""
-    if set(spec) != {"type", "parts"} or not isinstance(spec["parts"], list) or not 3 <= len(spec["parts"]) <= MAX_PARTS:
+    if not isinstance(raw_parts, list) or not low <= len(raw_parts) <= MAX_PARTS:
         reject("sketch_parts")
     parts = []
-    for raw in spec["parts"]:
+    for raw in raw_parts:
         if not isinstance(raw, dict) or set(raw) != FIELDS:
             reject("sketch_part_fields")
         if raw["shape"] not in SHAPES or raw["color"] not in COLORS:
@@ -38,7 +38,7 @@ def parts_of(spec) -> list[dict]:
         inside = 0 <= x <= W and 0 <= y <= H and 0 <= x + w <= W and 0 <= y + h <= H
         if not inside or (not linear and (w < 20 or h < 20)):
             reject("sketch_part_bounds")
-        if not 1 <= step <= MAX_STEPS:
+        if not 1 <= step <= MAX_STEPS or (single_step and step != 1):
             reject("sketch_part_step")
         text = raw["text"]
         if raw["shape"] == "text":
@@ -57,7 +57,23 @@ def parts_of(spec) -> list[dict]:
     return parts
 
 
+def parts_of(spec) -> list[dict]:
+    if set(spec) != {"type", "parts"}:
+        reject("sketch_parts")
+    return _check_parts(spec["parts"], low=3, single_step=False)
+
+
+def hero_states(spec) -> list[list[dict]]:
+    """The story's own object, drawn in 2-4 states: each state is a whole drawing, the later one replaces the earlier."""
+    states = spec.get("states") if set(spec) == {"type", "states"} else None
+    if not isinstance(states, list) or not 2 <= len(states) <= 4 or any(not isinstance(s, dict) or set(s) != {"parts"} for s in states):
+        reject("hero_states")
+    return [_check_parts(s["parts"], low=2, single_step=True) for s in states]
+
+
 def steps(spec) -> int:
+    if isinstance(spec, dict) and spec.get("type") == "hero":
+        return len(spec["states"]) if isinstance(spec.get("states"), list) else 0
     parts = spec.get("parts") if isinstance(spec, dict) else None
     if not isinstance(parts, list):
         return 0
@@ -85,12 +101,19 @@ def _face(p, cx, cy, fill) -> str:
 
 
 def draw(L, spec, step):
-    parts = parts_of(spec)
-    shown = steps(spec) if step is None else step
-    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
-           f'<rect x="12" y="12" width="{W - 24}" height="{H - 24}" rx="40" fill="{PAPER}" stroke="{INK}" stroke-width="8"/>']
+    hero = spec.get("type") == "hero"
+    if hero:  # the object itself, no card behind it: state k replaces state k-1
+        states = hero_states(spec)
+        shown = len(states) if step is None else step
+        parts = states[max(1, min(shown, len(states))) - 1]
+        out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">']
+    else:
+        parts = parts_of(spec)
+        shown = steps(spec) if step is None else step
+        out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
+               f'<rect x="12" y="12" width="{W - 24}" height="{H - 24}" rx="40" fill="{PAPER}" stroke="{INK}" stroke-width="8"/>']
     for p in parts:
-        if p["step"] > shown:
+        if not hero and p["step"] > shown:
             continue
         x, y, w, h = p["x"], p["y"], p["w"], p["h"]
         cx, cy, fill, ink = x + w / 2, y + h / 2, COLORS[p["color"]], _stroke(p["color"])

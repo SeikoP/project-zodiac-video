@@ -312,12 +312,12 @@ class EpisodeCheckTests(unittest.TestCase):
             skeleton = json.dumps({"payload": {"intent": {"scenes": [], "assets": {}}}})
             with mock.patch("tools.studio_project.agent_parts.merge", return_value="{}"),                     mock.patch("tools.studio_project.agent_authoring.bind_proposal", return_value=("{}", [])),                     mock.patch("tools.studio_project.agent_authoring.proposal", side_effect=StudioError("VISUAL_GRAMMAR", "s02 mechanic cannot bind", "visual")):
                 issues = io.check_episode(skeleton, {"s01": "{}"}, ["s01", "s02"])
-            self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("PROPOSAL_INVALID", "s02")])  # the scene the validator names is the one sent back
+            self.assertEqual([(i["code"], i["scene_id"]) for i in issues if i["code"] != "HERO_MISSING"], [("PROPOSAL_INVALID", "s02")])  # the scene the validator names is the one sent back
             ok = {"scenes": [], "assets": {}}
             found = [{"name": "story-visual-presence", "issues": [{"code": "STORY_VISUAL_COVERAGE", "scene_id": "s02"}, {"code": "NARRATIVE_BRIEF_REQUIRED", "scene_id": "s02"}]}]
             with mock.patch("tools.studio_project.agent_parts.merge", return_value="{}"),                     mock.patch("tools.studio_project.agent_authoring.bind_proposal", return_value=("{}", [])),                     mock.patch("tools.studio_project.agent_authoring.proposal", return_value=ok),                     mock.patch("tools.studio_project.pipeline.validators.node_runner", return_value=found):
                 issues = io.check_episode(skeleton, {"s01": "{}"}, ["s01", "s02"])
-            self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("STORY_VISUAL_COVERAGE", "s02")])  # briefs the proposal completes are not held against it
+            self.assertEqual([(i["code"], i["scene_id"]) for i in issues if i["code"] != "HERO_MISSING"], [("STORY_VISUAL_COVERAGE", "s02")])  # briefs the proposal completes are not held against it
 
 
 class MotifRepeatTests(unittest.TestCase):
@@ -338,7 +338,7 @@ class MotifRepeatTests(unittest.TestCase):
                     mock.patch("tools.studio_project.agent_authoring.bind_proposal", return_value=("{}", [])), \
                     mock.patch("tools.studio_project.agent_authoring.proposal", return_value=None):
                 issues = io.check_episode("{}", {"s01": self.part("route"), "s02": self.part("route"), "s03": self.part("stamp")}, ["s01", "s02", "s03"])
-        self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("GRAPHIC_MOTIF_REPEATED", "s02")])
+        self.assertEqual([(i["code"], i["scene_id"]) for i in issues if i["code"] != "HERO_MISSING"], [("GRAPHIC_MOTIF_REPEATED", "s02")])
 
 
 class CheckFilterTests(unittest.TestCase):
@@ -434,3 +434,13 @@ class InventionChecksTests(unittest.TestCase):
     def test_prop_idle_goes_back_to_the_act_choice(self):
         from tools.studio_project.pipeline.failure_policy import origin, route
         self.assertEqual((route({"code": "PROP_IDLE"}), origin({"code": "PROP_IDLE"})), ("model", "act"))
+
+    def test_a_scene_without_its_own_drawn_object_is_sent_back_to_the_stage_choice(self):
+        from tools.studio_project.authoring_chain import graphic_motifs_of, has_story_visual
+        from tools.studio_project.pipeline.failure_policy import origin, route
+        hero = {"graphic_s01-step1": {"category": "studio_graphic", "creative_origin": {"template": "hero"}}}
+        self.assertEqual(graphic_motifs_of(self.part([], [], hero)), ["hero"])
+        self.assertEqual(graphic_motifs_of(self.part([], [])), [])
+        self.assertTrue(has_story_visual(self.part([], [], {"sv": {"category": "story_visual"}})))
+        self.assertFalse(has_story_visual(self.part([], [])))
+        self.assertEqual((route({"code": "HERO_MISSING"}), origin({"code": "HERO_MISSING"})), ("model", "stage"))

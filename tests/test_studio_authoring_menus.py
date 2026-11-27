@@ -161,7 +161,7 @@ class GraphicSchemaTests(unittest.TestCase):
         m = menus()
         schema = menus_mod.stage_schema(m)["properties"]["graphic"]
         motifs = [v["properties"]["motif"]["enum"][0] for v in schema["anyOf"]]
-        self.assertEqual(motifs, ["none", "sketch", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread"])
+        self.assertEqual(motifs, ["none", "hero", "sketch", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread"])
         good = {"motif": "tally", "anchor_id": m["anchors"][0]["id"], "title": "t", "count": "3", "caption": "c"}
         self.assertEqual(menus_mod.schema_errors(good, schema), [])
         self.assertTrue(menus_mod.schema_errors({**good, "count": "9"}, schema))

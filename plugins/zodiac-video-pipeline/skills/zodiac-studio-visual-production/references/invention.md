@@ -25,7 +25,7 @@ Every scene has exactly one **device** in the brief: the visible mechanism by wh
 ## 3. Props must act
 A prop is in the scene because a character does something with it **and it changes on screen**: it moves, passes between people, changes state or is revealed. A prop that only stands there is deleted, not kept as decoration. Choose by verb first ("shows the phone to…", "pushes the cup away"), library id second, and prefer an id with state variants. When a needed prop or variant does not exist, record the request (`NEW_VARIANT_MASTER_REQUIRED`); never substitute a still prop.
 
-**Enough props.** Across the episode use at least three different physical props from the library (a scene may have none), each acting in its scene. The cover is dressed with the props the video really uses, so an episode with one prop leaves its cover empty.
+**The hero object.** Every scene has one object the scene is about (the cake, the pillow, the film, the message), drawn by you as a `hero` picture in two to four states that the narration changes: whole, then cut, then handed over, then left alone. Library props are background now, at most one per scene and only when they do something. The cover borrows the episode's drawn objects and the props it really uses.
 
 ## 4. Pictures are about people
 A picture (graphic or story visual) makes one fact visible **about what the characters do to each other**. Tests, all of which must pass:

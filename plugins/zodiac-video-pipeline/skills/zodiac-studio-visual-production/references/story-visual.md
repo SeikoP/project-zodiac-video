@@ -46,3 +46,12 @@ Fixed layouts (stamp, meter, versus, receipt, route, folder, tally, chat_thread)
 - Keep parts apart, keep 40 px free at the edges, give every label a box wide enough for it (Core refuses text that does not fit; it never shrinks below readable).
 - A sketch passes the five tests in `invention.md` like any picture. Two scenes never share the same drawing; a callback to an earlier sketch is allowed only when the brief names it.
 - Use a fixed layout only when its form is the fact itself (a receipt for a bill, a route for stops) and say so in the brief's `why`.
+
+## Hero: the scene's own object, drawn by you (required in every scene)
+
+The library props are clip-art: they stand beside the characters and the story reads the same without them. The hero is different: it is **the object the scene is about**, drawn by you, and **the words change it**.
+
+- Pick the one thing the beat turns on (the cake, the pillow, the film, the message, the key) and draw it in 2 to 4 **states**: each state is a whole drawing of 2 to 14 parts (same parts, palette and 960x630 canvas as a sketch, every `step` 1), and each state **replaces** the one before.
+- Each state has its own `anchor_id`, in the order of the words; the first state's anchor is the picture's `anchor_id`. The object changes when the narration says it changes: whole, then cut in two unequal pieces, then one piece pushed across, then left alone.
+- Draw the object with its details: slices and a bite, a crack, a crossed-out line, a bent corner. Never a label card. Faces and hands of the characters are not drawn here: the characters are on stage.
+- Removal test: delete the hero. If the scene still reads the same, you drew the wrong object. Core sends a scene back (`HERO_MISSING`) when it has none, and refuses states whose anchors are out of order.

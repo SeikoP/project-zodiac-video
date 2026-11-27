@@ -76,6 +76,15 @@ def graphic_motifs_of(text) -> list[str]:
                    and a["creative_origin"].get("template")})
 
 
+def has_story_visual(text) -> bool:
+    """True when the stored scene part carries a Phase 1 story visual (which then is the scene's picture)."""
+    try:
+        assets = json.loads(text)["payload"].get("assets") or {}
+    except (TypeError, ValueError, KeyError):
+        return False
+    return any(isinstance(a, dict) and a.get("category") == "story_visual" for a in assets.values())
+
+
 def _keep_brief(io, record: dict) -> None:
     """Leave the production brief (or why there is none) beside the Visual Intent: chain-parts are deleted when the run finishes."""
     workspace = getattr(io, "workspace", None)
@@ -560,6 +569,11 @@ class LiveIO:
                 if motif in seen and motif != "sketch":  # a sketch is drawn anew each time
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
+        for sid in order:  # the scene's own object, drawn and changed by the words: without it the picture is clip-art beside the actors
+            if texts.get(sid) and "hero" not in graphic_motifs_of(texts.get(sid)) and not has_story_visual(texts.get(sid)):
+                found.append({"code": "HERO_MISSING", "scene_id": sid,
+                              "detail": "cảnh chưa có vật chính do agent vẽ: chọn graphic motif 'hero', vẽ đúng vật mà lời đọc nói tới ở 2-4 trạng thái "
+                                        "đổi theo từng câu (nguyên → cắt → trao…), mỗi trạng thái một neo lời"})
         for sid in order:  # a prop that nothing acts on is decoration: the scene's act is chosen again with the prop doing something
             idle = idle_props(texts.get(sid))
             if idle:

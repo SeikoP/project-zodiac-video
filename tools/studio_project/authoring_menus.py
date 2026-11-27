@@ -132,14 +132,14 @@ BRIEF_RULES = (
     "You are preparing the production brief BEFORE anything is built. Read every document in the data (the narration scene by scene, the "
     "narrative plan, the writer brief, the episode scope, the voice direction) and the whole skill above, then write the brief exactly as "
     "brief.md describes. Think about the episode as ONE argument: what it claims, where it turns, what the viewer must see to follow it "
-    "muted. Pictures (graphic) make ONE countable, comparable or written fact visible. Prefer a sketch: a drawing YOU compose for this scene from parts (see graphic_rules), so no two episodes share one; a fixed layout is the fallback when it fits exactly: stamp (a verdict word), meter (a level between two "
+    "muted. EVERY scene has a HERO: the one object the scene is about, drawn by the agent in 2-4 states that the words change (picture.motif = hero; fact = the object and how it changes, e.g. a whole cake, then cut into two unequal pieces, then one piece pushed across); it must fail the removal test: delete it and the scene loses its plot. Pictures (graphic) otherwise make ONE countable, comparable or written fact visible. Prefer a sketch: a drawing YOU compose for this scene from parts (see graphic_rules), so no two episodes share one; a fixed layout is the fallback when it fits exactly: stamp (a verdict word), meter (a level between two "
     "sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a "
     "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
     "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese. "
     "The cover is this episode's own (brief.md): topic, hook of 6-14 words stating its contradiction, a scene and a symbolic object, never the "
     "concept template and never like recent_episodes. who_on_stage per scene: A frame holds at most 3 people, and only three-person-comparison holds 3 (it has no prop slot); with a prop on the stage at most 2 people. A cast of 4 means different scenes show different people, never 4 in one frame. Follow invention.md: list every person who acts or is acted on (on_screen true) as a character, give EACH scene one story device that "
-    "is not 'they talk' (hand-over, prop as evidence, distance as meaning, accumulation, reaction chain, split stage, callback), make every "
-    "prop DO something that changes on screen (verb first, library id second; at least three different physical props across the episode, the cover borrows them), tie each picture to what a character does on the same "
+    "is not 'they talk' (hand-over, prop as evidence, distance as meaning, accumulation, reaction chain, split stage, callback), make the "
+    "hero change on screen with the words, state by state; library props are only background, at most one per scene and only when it does something; tie each picture to what a character does on the same "
     "anchor (it must fail the removal test), vary the setting scene to scene, and say in 'rhythm' what differs from recent_episodes.")
 
 
@@ -181,6 +181,12 @@ def _object(properties: dict) -> dict:
 
 
 GRAPHIC_RULES = (
+    "HERO (required in every scene): the ONE object this scene is about (the cake, the pillow, the film, the message), drawn by you in 2-4 states that "
+    "the narration changes: whole, then cut, then handed over, then left alone. Each state is a complete drawing (2-14 parts, same parts and 960x630 canvas "
+    "as sketch, every step 1) that REPLACES the one before; each state has its own anchor_id, in the order of the words, and the first state's anchor is "
+    "the graphic's anchor_id. The change must be what the words say, and the scene must lose its plot without it: if the object could be deleted and "
+    "the story would read the same, you drew the wrong object. Draw the object itself, with its details (slices, a bite, a crack, a crossed-out line), "
+    "never a label card; faces and hands of the characters are NOT drawn here, the characters are on stage. Library props are only background now. "
     "SKETCH (preferred): draw the scene's idea yourself as 3-18 parts on a 960x630 canvas (x,y = top-left, w,h = size; for line/arrow w,h are the "
     "end offset). Shapes: box, circle, line, arrow, text (a short label), face (text = happy|flat|angry|sad|surprised), check, cross, heart, star, scribble. "
     "Colours ink, paper, teal, coral, gold, card. step 1-4 = the order the parts appear on the anchors, steps with no gaps. Compose a picture of THIS story, not a "
@@ -192,7 +198,7 @@ GRAPHIC_RULES = (
     "chat_thread (messages). The episode needs at least one such picture (about one scene in four): Core sends a scene back when its "
     "words state a countable, comparable or written fact and you chose 'none'. Use a DIFFERENT motif in every scene; never the same one twice. Fields are short, in Vietnamese, exact words "
     "from the narration where possible. anchor_id = the words where the picture first appears; later pieces appear on the anchors after it.")
-GRAPHIC_MOTIFS = ("sketch", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
+GRAPHIC_MOTIFS = ("hero", "sketch", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
 
 
 def _graphic_schema(menus: dict) -> dict:
@@ -201,6 +207,11 @@ def _graphic_schema(menus: dict) -> dict:
     arr = lambda item, n: {"type": "array", "maxItems": n, "items": item}  # noqa: E731
     return {"anyOf": [
         _object({"motif": _enum(["none"])}),
+        _object({"motif": _enum(["hero"]), "anchor_id": anchor, "name": text(30),
+                 "states": {"type": "array", "minItems": 2, "maxItems": 4, "items": _object({
+                     "anchor_id": anchor,
+                     "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960), "h": _int(630),
+                                           "color": _enum(tuple(SKETCH_COLORS)), "text": text(28), "step": _int(1, 1)}), 14)})}}),
         _object({"motif": _enum(["sketch"]), "anchor_id": anchor,
                  "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960), "h": _int(630),
                                        "color": _enum(tuple(SKETCH_COLORS)), "text": text(28), "step": _int(4, 1)}), 18)}),

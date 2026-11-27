@@ -13,7 +13,7 @@ from fontTools.ttLib import TTFont
 
 FONT = Path(__file__).resolve().parents[2] / "runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf"
 INK, PAPER, TEAL, CORAL, GOLD = "#2F3C44", "#FFFCF7", "#82BFB4", "#E97A66", "#F2C45C"
-ALLOWED = {"sketch", "story_text", "chat_compare", "tally", "chat_thread", "stamp", "meter", "versus", "receipt", "route", "folder"}
+ALLOWED = {"hero", "sketch", "story_text", "chat_compare", "tally", "chat_thread", "stamp", "meter", "versus", "receipt", "route", "folder"}
 CLEAN = re.compile(r"^[^<>\x00-\x1f]{1,90}$", re.UNICODE)
 
 
@@ -87,7 +87,7 @@ def steps(spec) -> int:
     cell per count; a chat_thread one message per step; a story_text appears once."""
     if not isinstance(spec, dict) or spec.get("type") not in ALLOWED:
         reject("type")
-    if spec["type"] == "sketch":
+    if spec["type"] in ("sketch", "hero"):
         from .graphic_sketch import steps as sketch_steps
         return sketch_steps(spec)
     if spec["type"] in ("stamp", "meter", "versus", "receipt", "route", "folder"):
@@ -153,7 +153,7 @@ def visual_svg(spec, step=None):
     if not isinstance(spec, dict) or spec.get("type") not in ALLOWED:
         reject("type")
     letterer = Letterer()
-    if spec["type"] == "sketch":
+    if spec["type"] in ("sketch", "hero"):
         from .graphic_sketch import draw as draw_sketch
         elements = draw_sketch(letterer, spec, step)
     elif spec["type"] in ("stamp", "meter", "versus", "receipt", "route", "folder"):

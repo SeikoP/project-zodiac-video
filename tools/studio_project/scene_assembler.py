@@ -239,6 +239,13 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         story_visual_art.visual_svg(graphic_spec)  # draws it once: a field that does not fit the art is refused here, with its reason
         if story_visual_art.steps(graphic_spec) < 1:
             raise ValueError(f"graphic {graphic['motif']!r} cần ít nhất một phần nội dung (hàng/mục/điểm/tin nhắn)")
+    hero_plan = None
+    if graphic_spec is not None and graphic_spec["type"] == "hero":  # each state of the object lands on its own words, in order
+        by_anchor = {a["id"]: a for a in menus["anchors"]}
+        ids = [state["anchor_id"] for state in graphic["states"]]
+        if any(i not in by_anchor for i in ids) or ids != sorted(set(ids), key=lambda i: by_anchor[i]["at"]) or ids[0] != graphic.get("anchor_id"):
+            raise ValueError("hero: mỗi trạng thái cần một neo lời riêng, theo đúng thứ tự trong lời đọc, trạng thái đầu trùng anchor_id")
+        hero_plan = [(f"step{k}", {"type": "voice_anchor", "text": by_anchor[i]["text"]}) for k, i in enumerate(ids, 1)]
     has_band = bool(story_visuals) or graphic_spec is not None
     props = {p["id"]: p for p in agent_authoring._library_props()}
     present = stage["present"]
@@ -369,7 +376,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
 
     act = {"events": [{**e, "target": alias.get(e["target"], e["target"])} for e in act["events"]
                       if alias.get(e["target"], e["target"]) is not None]}
-    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text, story_reveal, sv_steps)
+    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text, story_reveal, sv_steps, {f"graphic_{scene_id}": hero_plan} if hero_plan else None)
     notes += timing_notes
     scene = {"id": scene_id, "narration_range": list(scene_range), "semantic_goal": goal,
              "grammar": {"frame_id": frame["id"], "mechanic_id": stage["mechanic_id"], "bindings": bindings},
@@ -528,6 +535,8 @@ def graphic_to_spec(graphic: dict) -> dict:
     """The model's flat choice as the art module's spec (counts and levels arrive as text)."""
     motif = graphic["motif"]
     try:
+        if motif == "hero":
+            return {"type": "hero", "states": [{"parts": [dict(p) for p in state["parts"]]} for state in graphic["states"]]}
         if motif == "sketch":
             return {"type": "sketch", "parts": [dict(p) for p in graphic["parts"]]}
         if motif == "stamp":
@@ -613,7 +622,7 @@ def story_reveal_text(context: dict, scene_id: str) -> str | None:
 
 
 def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str, story_reveal: str | None = None,
-            sv_steps: dict | None = None) -> tuple[list[dict], list[str]]:
+            sv_steps: dict | None = None, plans: dict | None = None) -> tuple[list[dict], list[str]]:
     by_id = {e["id"]: e for e in entities}
     anchors = {a["id"]: a for a in menus["anchors"]}
     current = {e["id"]: e["initial_state"] for e in entities}
@@ -626,8 +635,8 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
 
     for ident in sv_entities:  # revealed on the first anchor, or at the start when the scene has none
         if (sv_steps or {}).get(ident):
-            for after, trigger in _reveal_plan(menus, sv_steps[ident], scene_text, story_reveal):
-                add(ident, current[ident], after, trigger, "Hiện thêm một phần của hình giải thích", SWAP)
+            for after, trigger in (plans or {}).get(ident) or _reveal_plan(menus, sv_steps[ident], scene_text, story_reveal):
+                add(ident, current[ident], after, trigger, "Vật của chuyện đổi trạng thái" if (plans or {}).get(ident) else "Hiện thêm một phần của hình giải thích", SWAP)
             continue
         first = min(anchors.values(), key=lambda a: a["at"], default=None)
         if story_reveal and story_reveal in scene_text:  # on the beat the picture explains
