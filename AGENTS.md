@@ -39,3 +39,10 @@ authorized by the user; do not ask again for routine task commits/pushes.
 - Technical completion does not grant human voice/visual/video approval.
   Leave those gates PENDING without genuine user evidence. Release builds,
   installers, publication and merging into production still need authorization.
+- Delegated review: when the user explicitly says, for a named episode or test
+  package, that the agent may approve the voice/visual gates (for example "gói
+  thử nghiệm, bỏ qua bước nghe, bạn duyệt"), the agent may complete those gates
+  by real clicks in the Studio GUI (tools/studio_e2e), never by writing receipts
+  or approvals directly. The delegation covers only that episode and only the
+  gates the user named; it never covers export approval, publication or release.
+  Say in the report that the gates were approved by delegation, not by listening.
