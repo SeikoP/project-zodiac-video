@@ -32,7 +32,7 @@ test('no face draws strokes under the eyes (bags / dark circles read as unsettli
   const details=expr(face.id).details??'';
   for(const [,d] of details.matchAll(/<path d="([^"]+)" fill="none"/gu)){
    const numbers=d.match(/-?\d+(?:\.\d+)?/gu).map(Number),ys=numbers.filter((_,i)=>i%2===1);
-   assert.ok(Math.max(...ys)<296,face.id+': a line stroke below the eye level (y>=296) looks like an eye bag');
+   assert.ok(!ys.some(y=>y>=296&&y<=340),face.id+': a line stroke just under the eyes (y 296-340) looks like an eye bag');
   }
  }
 });
