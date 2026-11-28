@@ -29,7 +29,7 @@ Compete genuinely different premises. A concept must depend on the target sign's
 
 For profile modes, apply **Profile Fidelity Review** (narration-skeleton.md section 6d): map evidence-bounded behavior facets and the concept contrast before selecting examples or motif. Each example must earn its place through a distinct insight; direct recognizable behaviors need no staged plot. Carry the facet map and any example rationale in existing creative_direction prose, not new fields. Review example-removal, profile recall and motif-pressure on the actual narration.
 
-Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Optional `story_visuals[]` may preserve a central image for Local, but Phase 1 does not choose assets or compose scenes.
+Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Explore literal and nonliteral visual candidates and normally preserve a compelling episode-level image in `story_visuals[]` for Local, but Phase 1 does not choose assets or compose scenes.
 
 The Writer Brief is a compact creative bridge, not a compiler product. Preserve creative direction, voice, rhythm, key beats and exclusions.
 

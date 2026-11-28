@@ -4,7 +4,7 @@ Fresh storytelling imagery has one semantic type: **Hình kể chuyện / Story 
 
 ## Ownership
 
-**Phase 1** decides whether a Story Visual is justified. There is no quota. When used, `narrative_plan.story_visuals[]` contains one concrete direction with the exact story point, muted viewer read, visible subject/action, visual idea, contribution and optional semantically required lettering.
+**Phase 1** explores original visual expressions of approved meaning and normally selects a compelling one. No per-scene quota; a specific physical situation is not required. Directions retain the existing story point, viewer read, drawable subject/state, visual idea, contribution and optional lettering. Phase 2 invents the drawing.
 
 **Phase 2** executes that direction. It may change geometry, state assets, placement, transitions and lettering treatment, but it may not change the approved meaning or invent another symbol.
 

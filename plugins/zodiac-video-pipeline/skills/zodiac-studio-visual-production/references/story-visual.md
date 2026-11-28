@@ -1,9 +1,9 @@
 # Story Visual (Hình kể chuyện)
 
-A Story Visual makes **one story fact visible: who does what, what changes, what that means**. It may be an illustration, outlined lettering, or both inside the same entity, state and SVG. It is an explanation, not an image attached because the narration mentions an emotion.
+A Story Visual expresses an approved idea through original visual invention: literal illustration, metaphor, symbolic exaggeration, typography, visual humor or a recurring motif. No specific physical situation or causal sequence is required.
 
 ## Decide first
-Read the exact narration beat, the brief's plan for it (and any Phase 1 direction as evidence only), then write the intended viewer read in plain words. Someone who has not seen the episode, muted, must name the participants, follow the change and state the consequence. **Removal test:** if removing it loses no important fact, omit it and say why. A lamp establishes a setting, a slumped pose shows fatigue, captions transcribe speech; none of them supplies a causal explanation. There is no per-scene quota and quiet scenes need none, but the **episode** must not be a row of talking characters: the brief (`brief.md`) plans, from one read of the whole script, which scenes state a countable, comparable or written fact and gives each a picture; `none` everywhere needs a reason that holds for every scene.
+Read the exact narration beat, the brief's plan for it (and any Phase 1 direction as evidence only), then write the intended viewer read in plain words. At phone size the drawing should be legible and the intended meaning intuitive alongside narration; it need not retell a literal event. **Removal test:** if removing it loses no insight, humor, emotion, emphasis or memorable image, omit it and say why. A lamp establishes a setting, a slumped pose shows fatigue, captions transcribe speech; none of them supplies a causal explanation. There is no per-scene quota and quiet scenes need none, but the **episode** must not be a row of talking characters: the brief (`brief.md`) plans, from one read of the whole script, which scenes state a countable, comparable or written fact and gives each a picture; `none` everywhere needs a reason that holds for every scene.
 
 Examples of what counts: task cards that start in two named columns and collect on one side while the other ends at a large 0; a first offer, a refusal, another attempt, then the hand withdrawing, with the count revealed only at the third; a bag that changes hands while its label changes from "ĐỂ TÔI!" to "ĐƯỢC XÁCH!". A floating meter, an unlabeled battery, a glyph or one abstract word does not identify the relationship.
 
@@ -11,9 +11,9 @@ Examples of what counts: task cards that start in two named columns and collect 
 Phase 1 records `story_visuals[]` plus an explicit `story_visual_decision` (`required`, or `omitted` with a reason). Each direction has `id`, `beat_ids`, `story_point`, `viewer_read`, `visible_subject`, `visible_action`, `visual_idea`, `contribution` (what is lost without it) and optional exact `lettering[]`. Missing input is a blocker for the owner, never something to invent. Phase 2 does not pick a Story Visual from a catalog; it authors one scene-specific drawing per state.
 
 Phase 2 then:
-1. binds `phase1_visual_id` and exact narration anchors in `art_direction.narrative_brief`, with drawable before / change / after states;
+1. binds `phase1_visual_id` and exact narration anchors in `art_direction.narrative_brief`, with drawable states, including a static meaningful image where appropriate;
 2. authors one `story_visual` entity with one SVG per state and the matching asset category; any words are baked into that SVG's paths, never a separate text overlay or coverage lane;
-3. makes identity, ownership and direction explicit in the picture, with short words large enough at phone size; hides future outcomes until their exact anchor and removes the visual when its job ends;
+3. makes the intended visual relationship legible, with short words large enough at phone size; hides future outcomes until their exact anchor and removes the visual when its job ends;
 4. declares `layers.story_visual` use or omit, names its entities and events, and passes provenance, completeness, presence, event/state and preview checks.
 
 ## Layout and review
@@ -42,7 +42,7 @@ Fixed layouts (stamp, meter, versus, receipt, route, folder, tally, chat_thread)
 
 - Parts: box, circle, line, arrow, text (a short label, at most 28 characters), face (happy, flat, angry, sad, surprised), check, cross, heart, star, scribble. 3 to 18 parts. Colours: ink, paper, teal, coral, gold, card.
 - `step` 1 to 4, no gaps, is the order the drawing builds up on the anchors: draw the cause first, the effect on the next anchor.
-- Draw what happens in THIS scene, the way a person would sketch it on a napkin: the cake cut into two unequal slices with a coral arrow pointing at the big one; a door, a clock and a small face getting angrier by step; two faces with a heart growing between them. Not a chart, not a caption on a card.
+- Draw the meaning of THIS beat, literally or metaphorically, the way a person would sketch it on a napkin: the cake cut into two unequal slices with a coral arrow pointing at the big one; a door, a clock and a small face getting angrier by step; two faces with a heart growing between them. Not a chart, not a caption on a card.
 - Keep parts apart, keep 40 px free at the edges, give every label a box wide enough for it (Core refuses text that does not fit; it never shrinks below readable).
 - A sketch passes the five tests in `invention.md` like any picture. Two scenes never share the same drawing; a callback to an earlier sketch is allowed only when the brief names it.
 - Use a fixed layout only when its form is the fact itself (a receipt for a bill, a route for stops) and say so in the brief's `why`.
@@ -51,7 +51,7 @@ Fixed layouts (stamp, meter, versus, receipt, route, folder, tally, chat_thread)
 
 The library props are clip-art: they stand beside the characters and the story reads the same without them. The hero is different: it is **the object the scene is about**, drawn by you, and **the words change it**.
 
-- Pick the one thing the beat turns on (the cake, the pillow, the film, the message, the key) and draw it in 2 to 4 **states**: each state is a whole drawing of 2 to 14 parts (same parts, palette and 960x630 canvas as a sketch, every `step` 1), and each state **replaces** the one before.
+- Pick a meaningful object, including a symbolic invention not literally named in the narration and draw it in 2 to 4 **states**: each state is a whole drawing of 2 to 14 parts (same parts, palette and 960x630 canvas as a sketch, every `step` 1), and each state **replaces** the one before.
 - Each state has its own `anchor_id`, in the order of the words; the first state's anchor is the picture's `anchor_id`. The object changes when the narration says it changes: whole, then cut in two unequal pieces, then one piece pushed across, then left alone.
 - Draw the object with its details: slices and a bite, a crack, a crossed-out line, a bent corner. Never a label card. Faces and hands of the characters are not drawn here: the characters are on stage.
 - Removal test: delete the hero. If the scene still reads the same, you drew the wrong object. Core sends a scene back (`HERO_MISSING`) when it has none, and refuses states whose anchors are out of order.

@@ -1,58 +1,37 @@
-# Hình kể chuyện — Phase 1 direction
+# Story Visual - Phase 1 creative direction
 
-**Hình kể chuyện** (`story_visual`) makes one story fact visible: who does what, what changes, and what that change means. Start from the exact narration beat, not a symbol or asset catalog. A viewer must recognize the participants and infer the consequence without reading your brief or hearing the voice. It is optional, with no quota. Omission is an explicit approved Narrative Plan decision: `story_visual_decision={mode:"omitted",reason:"..."}`.
-
-A Story Visual may be an illustration, outlined lettering, or both in the same visible state and SVG asset. Lettering is not a separate Phase-2 concept or layer.
-
-## Author one concrete direction
-
-When justified, add one concrete direction to `narrative_plan.story_visuals[]` for the story point it owns. Do not generate literal/metaphor/exaggeration variants or browse a symbolic catalog.
-
-Each direction contains:
-- `id`: stable identity;
-- `beat_ids[]`: beats it explains;
-- optional `evidence_refs[]`: copy real source IDs only when the approved plan/candidate carries them; lightweight handoffs may inherit evidence lineage through approved `beat_ids` plus the plan evidence boundary;
-- `story_point`: exact content point the viewer needs to understand;
-- `viewer_read`: what a muted viewer should infer;
-- `visible_subject`: concrete person/object relationship on screen;
-- `visible_action`: visible action or state change;
-- `visual_idea`: drawable endpoints, not an abstract noun;
-- `contribution`: the specific information lost if this Story Visual is removed;
-- optional `lettering[]`: exact short wording required for the visual meaning.
-
-Phase 2 owns drawing geometry, state layout and lettering treatment. It does not rewrite these semantic fields.
-
-## Editorial test
-
-Use a Story Visual only when all are true:
-
-1. **Central:** removing it makes an important turn, comparison or consequence harder to understand.
-2. **Concrete:** it names a visible subject plus a visible action/state change.
-3. **Zodiac-grounded:** the meaning follows the selected evidence/concept rather than a generic sign icon.
-4. **Silent-readable:** a viewer can infer the intended fact with audio muted.
-5. **Additive:** it contributes information beyond actor performance, physical props and environmental context.
-
-Generic scales, hearts, batteries, question marks, abstract meters, arrows between anonymous dots or decorative color changes fail this test unless the story-specific identities and causal change are visibly encoded.
+A Story Visual is an original visual expression of the episode's meaning: a behavior, contradiction, emotional movement, contrast, joke, reframe or payoff. It may be literal, metaphorical, symbolic, exaggerated, surreal, typographic or a recurring visual motif. It need not depict a physical situation from the narration, named participants, or a causal before/change/after sequence. The narration is the semantic anchor, not a storyboard that limits imagination.
 
 ## Story Visual candidate review
 
-`omitted` is a decision, not a default. Before choosing it, name at least two candidates: for each, the narration paragraph, the story fact, the visible subject and the visible action. Score each candidate against the five conditions above and record which condition failed. For a long profile the Turn paragraph and one contrast paragraph (outer, dark or night) must be among the candidates. A reason such as "the characters and props already show it" is not enough on its own: say what the candidate would add, and which condition it fails. If one candidate passes all five, use it (one Story Visual per scene, no decoration). If none passes, `story_visual_decision` carries the per-candidate failed conditions in `reason`.
+Read the entire premise and narration. Find the strongest image-worthy ideas across the hook, contrast and turn/payoff. Explore at least two candidates with substantially different approaches, including a nonliteral approach, before choosing omission. Normally select at least one compelling episode-level visual; no per-scene quota and no forced filler. A quiet beat may have none. Do not omit the episode's visual just because actors and props already communicate the literal action or because the narration contains no specific physical situation.
 
-## Lettering inside the visual
+The same visual may evolve across multiple beats or appear once as a memorable punchline. Drawing and short original or narration-derived lettering form one entity/state/asset; no separate story-text layer. Original visual wording may summarize the approved meaning without inventing a factual claim.
 
-Use `lettering[]` only when the exact words are part of what the viewer must read. Keep it short. The words and drawing are not two competing concepts: Phase 2 bakes the lettering into the same Story Visual state/asset, using outlines rather than live SVG text.
+## Direction contract (unchanged)
 
-## Ma Kết reference direction
+For each selected idea populate narrative_plan.story_visuals[]:
+- id, beat_ids[]: stable identity and actual narration anchors;
+- story_point: the approved meaning being expressed (not necessarily an event);
+- viewer_read: the insight, feeling or joke the audience should recognize;
+- visible_subject: drawable subject, including an invented symbolic object or composition;
+- visible_action: visible arrangement, state, contrast, transformation or reveal (a static state is valid);
+- visual_idea: concrete drawing concept with creative freedom, not geometry;
+- contribution: what clarity, wit, memorability or emotional impact is lost without it;
+- optional lettering[]: exact short wording when needed; optional evidence_refs[]: real source IDs only, otherwise approved beat lineage.
 
-For each idea write a before -> change -> consequence sentence. Example: both people own tasks -> recognizable tasks move to Ma Ket -> the partner has no remaining task. The labels identify ownership; the large zero communicates the consequence. A battery losing charge would only suggest tiredness and miss the relationship.
+Use story_visual_decision={mode:"required",reason:"..."} if selected. If truly none earns its space, record mode:"omitted" with the candidates and which condition failed for each; missing input is not omission.
 
-For the responsibility story, three accepted uses are:
-- **B2:** recognizable task objects visibly move from two people's ownership to one person's side, so the workload concentration is readable rather than represented by an abstract pressure icon;
-- **B4:** repeated refusal and the other person's withdrawal are shown as one causal progression; any short refusal wording is integrated into the same states rather than becoming an independent text overlay;
-- **B6:** the real bag/ownership handoff remains physical, while any permission wording used for the payoff is integrated into the same Story Visual state when it materially sharpens the viewer read.
+## Editorial tests
 
-Do not add a battery, permission icon, balance glyph or other symbolic decoration when the cast and real prop already communicate the fact. The Story Visual must earn its space by adding information.
+1. Meaning: the visual supports the episode's approved idea without inventing motives or facts.
+2. Legibility: the image is readable at phone size; its relationship to the narration is intuitive (silent-read checks the visual itself, not whether it retells the entire script).
+3. Originality: it is a purposeful visual invention, not a generic icon or stock illustration by default.
+4. Contribution: removing it loses meaningful clarity, humor, emotion, emphasis or a memorable image.
+5. Timing: reveal or transform at the right beat; never reveal a later payoff early.
+
+Examples are not templates: Libra's floating scales tilt as the character weighs competing priorities; Gemini's editable thought bubbles rearrange like a draft; Scorpio's clues assemble into a detective board; a guarded character's small door opens only for one person; a typographic punchline can become an image. None requires the narration to mention scales, drafts, detectives or a literal door. Avoid repeating the same symbol across episodes unless it is an intentional callback.
 
 ## Phase 2 handoff
 
-Phase 2 references the direction by `phase1_visual_id`, binds exact narration anchors, and authors one `story_visual` entity with state assets. Optional lettering is metadata on those states. Supply enough story context to execute without guessing: whose objects these are, their starting ownership, the visible change, its consequence, necessary words and the exact reveal anchor. A final result or repetition count must not appear before it happens in narration. Inspect the actual phone-size before/after images; field completeness alone cannot prove comprehension.
+Preserve the approved semantic direction and necessary wording. Local owns the drawing, layout, treatment, state count and visual execution; it may invent the composition and refine the metaphor within the approved meaning. Anchor each reveal to the narration; a static meaningful image needs no invented three-stage arc. Review actual phone-size frames. A valid contract alone does not prove visual quality.

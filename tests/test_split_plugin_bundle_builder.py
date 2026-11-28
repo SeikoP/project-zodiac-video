@@ -213,6 +213,23 @@ class SplitPluginBundleTests(unittest.TestCase):
         self.assertIn("zodiac-phase1-handoff@2", skill)
         self.assertTrue(plugin["version"])
 
+    def test_story_visual_creative_freedom_reaches_both_distributions(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for profile in ("web", "local"):
+                dest = Path(temp) / (profile + ".zip")
+                build_profile(ROOT, profile, dest)
+                with ZipFile(dest) as z:
+                    ref = z.read("skills/zodiac-video-pipeline/references/story-visual-direction.md").decode("utf-8")
+                    entry = z.read(f"skills/zodiac-video-{profile}/SKILL.md").decode("utf-8")
+                    self.assertIn("nonliteral", ref)
+                    self.assertIn("static state is valid", ref)
+                    self.assertIn("no specific physical situation", ref)
+                    self.assertIn("metaphor", entry)
+                    if profile == "web":
+                        self.assertIn("engagement-design@2", entry)
+                        self.assertIn("quotable_line", entry)
+                        self.assertIn("zodiac-engagement-design@2", z.read("skills/zodiac-video-pipeline/references/engagement-engine.md").decode("utf-8"))
+
     def test_web_content_review_rules_close_the_2_13_0_gaps(self):
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "web.zip"

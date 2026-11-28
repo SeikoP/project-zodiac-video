@@ -33,7 +33,7 @@ Before Narration, write a short **second-half pulse** where each later beat chan
 
 Write for **one Vietnamese narrator** first. Make spoken subjects, quotes, time order and causal links unambiguous; keep performance cues in the approved beat plan, not the narration text. The spoken script must survive a muted-video listen and a silent text read. Comedy should not require TTS to perform different characters or depend on editing to supply the point.
 
-Use `story_visual` only when a specific before/change/consequence (for example two identically worded invitations with opposite replies) becomes more legible visually than by narration alone. Otherwise state `story_visual_decision={mode:"omitted",reason:"..."}`. Do not make a text-overlay quota, duplicate captions, or add abstract icons to satisfy visual density.
+Explore original `story_visual` candidates for the episode's meaning, including nonliteral metaphor, exaggeration, symbolic imagery and visual humor. A physical situation or before/change/consequence is not required. Normally select a compelling image; omit only after the candidate review in story-visual-direction.md. No per-scene quota, duplicate captions or decorative filler.
 
 ## Review boundary
 

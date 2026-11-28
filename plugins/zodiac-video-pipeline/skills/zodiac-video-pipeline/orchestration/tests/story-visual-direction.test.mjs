@@ -57,3 +57,9 @@ test('Story Visual inherits evidence lineage through approved beat ids when ligh
  const result=validateStoryVisualDirection(p,{selectedCandidate:null});
  assert.equal(result.status,'PASS',JSON.stringify(result.issues));
 });
+
+test('accepts a nonliteral static symbolic expression without a physical situation',()=>{
+ const p=plan();
+ Object.assign(p.story_visuals[0],{story_point:'The narrator describes weighing competing priorities.',viewer_read:'Both priorities carry weight even without a literal choice scene.',visible_subject:'Floating balance scale above the character',visible_action:'A static asymmetric arrangement with two weights.',visual_idea:'A drawn scale with heart and speech bubble on opposite pans, suspended above the actor.',contribution:'Makes the internal tension visible without inventing a literal event.'});
+ assert.equal(validateStoryVisualDirection(p,{selectedCandidate:candidate}).status,'PASS');
+});
