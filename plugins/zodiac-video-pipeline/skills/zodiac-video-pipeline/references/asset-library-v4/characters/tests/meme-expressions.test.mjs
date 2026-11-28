@@ -25,3 +25,14 @@ test('performed meme faces have readable exaggeration on every body without chan
   }
  }
 });
+
+test('no face draws strokes under the eyes (bags / dark circles read as unsettling)',async()=>{
+ const catalog=JSON.parse(await readFile(new URL('../components/catalog.json',import.meta.url)));
+ for(const face of catalog.expressions){
+  const details=expr(face.id).details??'';
+  for(const [,d] of details.matchAll(/<path d="([^"]+)" fill="none"/gu)){
+   const numbers=d.match(/-?\d+(?:\.\d+)?/gu).map(Number),ys=numbers.filter((_,i)=>i%2===1);
+   assert.ok(Math.max(...ys)<296,face.id+': a line stroke below the eye level (y>=296) looks like an eye bag');
+  }
+ }
+});
