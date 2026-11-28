@@ -13,7 +13,7 @@ Do not manufacture mystery, false stakes, unsupported psychology, guaranteed ret
 
 Write `.authoring/engagement-design.json` before compiling the writer brief.
 
-Required format: `zodiac-engagement-design@1`.
+Required format: `zodiac-engagement-design@2` (`@1` stays readable for approved legacy runs; it has no `interaction`).
 
 It binds to the exact selected concept and Narrative Plan and contains:
 - `entry_hook.intent`: what the first spoken move gives the viewer;
@@ -22,11 +22,24 @@ It binds to the exact selected concept and Narrative Plan and contains:
 - `recognition_loop`: 2–6 concrete recognition cues;
 - `reframe_points`: 1–4 supported changes in interpretation;
 - `payoff_callback`: what the ending returns to with added meaning;
+- `interaction`: the viewer's move after watching (see below);
 - `beat_pull`: exactly one item per Narrative Plan beat with `beat_id`, `question_created`, `reason_to_continue`, `new_information`, and optional `payoff_promised`.
 
 Each beat must add information, create/resolve a useful question, deepen recognition, reframe, or pay off prior setup. A beat that only repeats the prior explanation should be redesigned before Narration.
 
 The writer receives only the compiled `engagement_direction`; do not inject the full beat map into the drafting context.
+
+## Interaction design (design@2)
+
+A story that is well told can still leave the viewer with nothing to do. `interaction` has exactly four short fields, each tied to this episode, never a generic call to action:
+- `comment_move`: one spoken moment that lets the viewer place themself or pick a side (a named choice between two behaviors of the sign, not "comment below");
+- `share_target`: the specific person this is for ("the one in your life who ..."), spoken or clearly implied;
+- `quotable_line`: one 4–25 word line of the narration written to be repeated; it must appear in the narration exactly as written;
+- `replay_seam`: how the last line returns to the opening image, word or question with a changed meaning, so a replay reads differently.
+
+Direct address ("bạn") is allowed at these points and wherever it makes recognition personal; keep the narrator's voice and do not turn the episode into a lecture addressed to the viewer. A viewer move must come from the story, never from a false stake, forced controversy or an unsupported claim about the sign. Do not alternate address by quota.
+
+The review (`interaction_check`) quotes the spoken text for each of the four fields. The quotable line is also checked verbatim against the narration. This is an editorial gate, not measured engagement: record real comments, shares and replays after publishing before drawing conclusions.
 
 ## Narration output: engagement-review.json
 
@@ -71,28 +84,10 @@ The Engagement Review remains semantic, but it must now be written with the dete
 - **Narrative Economy Review:** use the deletion test and distinct semantic gain across all beats, not only consecutive ones. Diagnose topic drift, generic behavior, repeated explanation and skeleton-driven padding. Repair only material defects; preserve strong beats and stop if no defect remains. See `narration-skeleton.md` section 6c for evidence and revision diff guidance. No token minimum is an excuse for filler, and editorial review is not measured retention.
 
 
-## Emergent narrative archetype
+## Narrative archetype
 
-An episode may use a recognizable narrative world when the **actual behavior mechanics** support it: detective case, quality control, interrogation, mock documentary, chat reconstruction, and other modes are examples, not a whitelist.
-
-The key rule is **behavior first, label second**. A mode needs concrete mechanics in the selected story. Viewer feedback may strengthen the choice when audiences independently name the same role, but that feedback is resonance evidence only; it is never Zodiac evidence.
-
-When `narrative_archetype` is present:
-- do not map a sign to a permanent mode;
-- keep `viewer_inference.explicitness=implicit`;
-- do not say the target role label or aliases in narration;
-- preserve a comment affordance so viewers can supply the label themselves;
-- keep raw comments, usernames and handles out of writer context;
-- repeat a recently used mode only with a substantive reason.
-
-A Scorpio story can therefore behave like a detective case without the narrator saying “Bọ Cạp là thám tử.” The audience inference is the success condition.
+The optional narrative world (detective case, QA, interrogation, ...) is defined in `narrative-modes.md`. When `narrative_archetype` is present the design validates it and the review checks that the role label is never spoken.
 
 ## Second-half continuity
 
-Do not judge engagement only from the opening. A strong first half followed by explanation-heavy prose is still a weak episode.
-
-Before Narration, design a second-half pulse. After the midpoint, each beat must do at least one new semantic job: action/event, decision, failed workaround, consequence, contrast, reframe/reveal, payoff or callback. Two consecutive post-midpoint explanation beats are a redesign signal.
-
-When a Narrative Motif is present, its state should continue to change after the midpoint. Do not abandon the motif once it has done the hook work.
-
-During revision, if the user says the opening works but the later section loses rhythm, keep the accepted opening and repair the post-midpoint pull chain first.
+The post-midpoint rule lives in `narrative-motif.md` (Second-half pulse). The review still marks two adjacent explanation-only beats as REVIEW, and when the user likes the opening but the later section loses rhythm, repair the pull chain after the midpoint first.

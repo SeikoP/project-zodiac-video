@@ -10,7 +10,7 @@ New, fresh Phase-01 authoring MUST establish **why this particular story is wort
 
 ## Engagement design before Narration
 
-For fresh 2.6.8+ runs, read `references/engagement-engine.md` and create `engagement-design.json` after the winning Story Spine is established and before writer-brief compilation. This does not replace premise quality, identity-first review or Viral support. It makes the reason-to-continue explicit: entry hook, open question, recognition cues, supported reframes, payoff callback and one viewer-pull job per Narrative Plan beat.
+For fresh 2.6.8+ runs, read `references/engagement-engine.md` and create `engagement-design.json` after the winning Story Spine is established and before writer-brief compilation. This does not replace premise quality, identity-first review or Viral support. It makes the reason-to-continue explicit: entry hook, open question, recognition cues, supported reframes, payoff callback one viewer-pull job per Narrative Plan beat and, in design@2, the interaction move (comment, share target, quotable line, replay seam).
 
 Do not rescue a weak premise by manufacturing mystery. If a beat has no new information, useful question, recognition, reframe or payoff, repair the Concept/Story Spine before Narration.
 

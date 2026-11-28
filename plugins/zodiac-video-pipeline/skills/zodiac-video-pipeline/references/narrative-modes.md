@@ -16,7 +16,9 @@ Use `zodiac-identity-first.md` as the authority when scenes dominate. The decons
 
 Examples include detective case, QA/bug tracker, interrogation, mock documentary, POV reconstruction, countdown, trial, sports commentary or a custom mode. Do not create a sign→mode lookup table. Rank the mode from the episode's actual mechanics.
 
-Prefer **implicit viewer inference**: show the clue-reading, bug-checking, cross-examining or reconstructing behavior strongly enough that viewers can name the role themselves. Do not automatically put the role label in narration, cover or caption.
+Behavior first, label second: a mode needs concrete mechanics in the selected story, ranked from that episode's behavior, never a permanent sign-to-mode mapping. Viewer feedback is resonance evidence only, never Zodiac evidence; keep raw comments, usernames and handles out of writer context, and repeat a recently used mode only with a substantive reason.
+
+Prefer **implicit viewer inference**: show the clue-reading, bug-checking, cross-examining or reconstructing behavior strongly enough that viewers can name the role themselves. Do not put the role label or its aliases in narration, cover or caption (`viewer_inference.explicitness=implicit`); keep a comment affordance so viewers can name the role themselves.
 
 ## Narration skeleton modes
 

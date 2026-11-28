@@ -6,8 +6,19 @@ const text=(v,k,min=8)=>{if(typeof v!=='string'||v.trim().length<min)fail(k);ret
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const norm=s=>String(s??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/đ/g,'d').replace(/[^\p{L}\p{N}]+/gu,' ').trim().replace(/\s+/gu,' ');
 
+const INTERACTION_KEYS=['comment_move','share_target','quotable_line','replay_seam'];
+const wordCount=s=>norm(s).split(' ').filter(Boolean).length;
+// Interaction design: the few things that make a viewer DO something after watching. Required by design@2, optional on legacy @1.
+function assertInteraction(interaction){
+ if(!interaction||typeof interaction!=='object')fail('interaction');
+ for(const k of INTERACTION_KEYS)text(interaction[k],'interaction.'+k);
+ const q=wordCount(interaction.quotable_line);
+ if(q<4||q>25)fail('interaction.quotable_line_length');
+}
+
 export function assertEngagementDesign(design,{plan,selectedCandidate}={}){
- if(design?.format!=='zodiac-engagement-design@1')fail('format');
+ if(!['zodiac-engagement-design@1','zodiac-engagement-design@2'].includes(design?.format))fail('format');
+ if(design.format.endsWith('@2')||design.interaction!=null)assertInteraction(design.interaction);
  if(!plan||!selectedCandidate)fail('lineage_inputs');
  if(design.selected_concept_id!==plan.selected_concept_id||design.selected_concept_id!==selectedCandidate.id)fail('selected_concept_id');
  // Final review binds the full plan; an unchanged base story can reuse its earlier design.
@@ -42,6 +53,7 @@ export function compileEngagementDirection(design){
   recognition_cues:[...design.recognition_loop],
   reframe_cues:[...design.reframe_points],
   payoff_callback:design.payoff_callback,
+  ...(design.interaction?{interaction:Object.fromEntries(INTERACTION_KEYS.map(k=>[k,design.interaction[k]]))}:{}),
   ...(design.narrative_archetype?{narrative_mode:compileNarrativeArchetypeDirection(design.narrative_archetype)}:{})
  };
 }
@@ -76,6 +88,19 @@ export function assertEngagementReview(review,{design,plan,narrationRaw}={}){
  const er=review.consecutive_explanation_risk;
  if(!er||!['PASS','REVIEW'].includes(er.result)||typeof er.note!=='string'||er.note.trim().length<20)fail('consecutive_explanation_risk');
  if(er.result==='REVIEW')unresolved.push('consecutive_explanation_risk');
+ if(design?.interaction){
+  const ic=review.interaction_check;
+  if(!ic||Object.keys(ic).sort().join('|')!==[...INTERACTION_KEYS].sort().join('|'))fail('review.interaction_check');
+  for(const k of INTERACTION_KEYS){
+   const c=ic[k];
+   if(!c||!['PASS','REVIEW'].includes(c.result))fail('interaction_check.'+k+'.result');
+   const ex=text(c.evidence_excerpt,'interaction_check.'+k+'.excerpt',8),words=norm(ex).split(' ').filter(Boolean);
+   if(words.length<3||words.length>35||!spoken.includes(norm(ex)))fail('interaction_check.'+k+'.excerpt');
+   if(c.result==='REVIEW')unresolved.push('interaction:'+k);
+  }
+  // The quotable line must be spoken as designed, not paraphrased away.
+  if(!spoken.includes(norm(design.interaction.quotable_line)))fail('interaction.quotable_line_not_spoken');
+ }
  if(!['PASS','REVIEW'].includes(review.decision)||!Array.isArray(review.revision_targets))fail('review.decision');
  if(review.decision==='PASS'&&(unresolved.length||review.revision_targets.length))fail('review.pass_with_unresolved');
  if(review.decision==='REVIEW'&&!review.revision_targets.length)fail('review.review_without_targets');

@@ -44,6 +44,7 @@ engagement_direction:
   recognition_cues: [<2–6 concrete recognition cues>]
   reframe_cues: [<1–4 supported reframes>]
   payoff_callback: <ending callback with added meaning>
+  interaction: {comment_move, share_target, quotable_line, replay_seam}  # design@2 only; the line must be spoken as written
 forbidden_claims:
   - <unsupported motive/cause/consequence/frequency/outcome>
 ```

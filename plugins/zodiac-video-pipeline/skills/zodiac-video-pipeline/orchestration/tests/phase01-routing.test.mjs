@@ -11,7 +11,7 @@ test('Web narration context is bounded creative guidance with no native outputs 
  const state=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url),'utf8'));
  const draft=await loadStepContext('01-content','narration',state.flags,{role:'draft'}),review=await loadStepContext('01-content','narration',state.flags,{role:'review'});
  assert.ok(draft.required_references.length<=7,draft.required_references.join('\n'));
- for(const ref of ['references/narration-rhythm.md','references/narration-skeleton.md','references/style-references/profile-structure-references.md','references/narrator-performance.md','references/performance-surfaces.md','references/voice-benchmark.md'])assert.ok(draft.required_references.includes(ref),ref);
+ for(const ref of ['references/narration-rhythm.md','references/narration-skeleton.md','references/style-references/profile-structure-references.md','references/performance-surfaces.md','references/voice-benchmark.md'])assert.ok(draft.required_references.includes(ref),ref);
  assert.ok(!draft.required_references.includes('references/content-quality-engine.md'));
  assert.deepEqual(draft.required_references,review.required_references);
  assert.deepEqual(draft.required_outputs,[]);
