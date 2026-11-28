@@ -58,7 +58,7 @@ export function createScenePainter(m,caption){
    }
   }
   const cue=captions().find(c=>frame>=c.start_frame&&frame<c.end_frame);
-  caption.replaceChildren();if(!cue){caption.style.display='none';return;}
+  caption.replaceChildren();if(!cue||(m.opening&&frame<m.opening.duration_frames)){caption.style.display='none';return;}  // the series cover owns the first frames: no subtitle until it is gone
   caption.style.display='block';const b=cue.resolved_layout;
   for(const k of ['x','y','width','height'])caption.style[{x:'left',y:'top',width:'width',height:'minHeight'}[k]]=b[k]+'px';
   const lines=resolveCaptionWordLines(cue,frame);
@@ -138,7 +138,7 @@ else if(active)p.paint(at-p.row.start);});
 if(pair){const total=pair.w.before+pair.w.after,frame=Math.floor((at-pair.s)*FPS+1e-6),stepped=Math.floor(frame/2)*2;
 paintTransition(painters[pair.i].node.querySelector('.scene-art'),painters[pair.i+1].node.querySelector('.scene-art'),pair.w.preset,stepped/total,PAPER);}}const tl=gsap.timeline({paused:true,onUpdate:paint});tl.to({progress:0},{progress:1,duration:${duration},ease:'none'});window.__timelines=window.__timelines||{};window.__timelines.episode=tl;paint();}if(document.fonts)verifyCaptionFont(start);else start();`;
   const html=`<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>${font}html,body{margin:0;width:1080px;height:1920px;overflow:hidden}#root{position:relative;width:100%;height:100%;background:${presentation.paper};font-family:ZodiacCaption,Arial,sans-serif}.clip,.scene-frame,.scene-art{position:absolute;inset:0;width:100%;height:100%}.entity img{display:block}.episode-caption{${captionCss(presentation)}}</style></head><body><div id="root" data-composition-id="episode" data-width="1080" data-height="1920" data-duration="${duration}" data-fps="${fps}">${clips.join('')}${openingHtml(opening,theme,rows[0].scene,assets,themeId,rows.map(r=>r.scene))}${watermarkHtml(presentation,escape)}</div><script>${runtime.gsap.replaceAll('</script','<\\/script')}</script><script>${script}</script></body></html>`;
-  return {html,duration_seconds:duration,frames:Math.ceil(duration*fps),source_map:sourceMap,caption_cues:captionCuesForEpisode(captionRows),approval_granted:false};
+  return {html,duration_seconds:duration,frames:Math.ceil(duration*fps),source_map:sourceMap,caption_cues:captionCuesForEpisode(captionRows,opening?opening.duration_frames/fps*1000:0),approval_granted:false};
 }
 
 function luminance(hex){const rgb=hex.slice(1).match(/../gu).map(n=>parseInt(n,16)/255).map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;}

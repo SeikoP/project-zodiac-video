@@ -51,3 +51,24 @@ test('caption pages are measured once, contiguous across speech gaps, and match 
  assert.match(episode.html,/verifyCaptionFont\(start\)/u);
  assert.match(preview.html,/FONT_LOAD_FAILED/u);
 });
+
+test('captions stay hidden under the series cover and start once it is gone',()=>{
+ const rows=[
+  {time:{fps:30,startMs:0,endMs:6000},pages:[
+   {start_frame:0,end_frame:30,resolved_layout:{lines:['Hết trong cover']}},
+   {start_frame:30,end_frame:120,resolved_layout:{lines:['Qua mép cover']}},
+   {start_frame:120,end_frame:180,resolved_layout:{lines:['Sau cover']}}]},
+ ];
+ const cues=captionCuesForEpisode(rows,2000);  // cover lasts 2 s
+ assert.deepEqual(cues.map(c=>c.text),['Qua mép cover','Sau cover']);
+ assert.equal(cues[0].startMs,2000,'a page that straddles the cover edge starts when the cover is gone');
+ assert.equal(captionCuesForEpisode(rows).length,3,'no cover: every page is listed');
+});
+
+test('preview and export hide the caption while the cover is up',async()=>{
+ const runtime=await previewRuntime(path.resolve('.'));
+ const opening={format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:'Nhân Mã',topic:'Khi Nhân Mã thật lòng yêu',duration_frames:45,transition_frames:6};
+ const episode=renderEpisode([{scene,time}],assets,'light',30,runtime,{},opening);
+ assert.match(episode.html,/m\.opening&&frame<m\.opening\.duration_frames/u);
+ assert.ok(episode.caption_cues.every(c=>c.startMs>=1500),'SRT lists nothing under the 1.5 s cover');
+});

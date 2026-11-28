@@ -45,7 +45,8 @@ export function planMeasuredCaptionPages(scene,time,presentation,fontBytes){
   return pages;
 }
 
-export function captionCuesForEpisode(rows){
+// hiddenUntilMs: the series cover covers the start of the video; a subtitle is neither drawn nor listed under it.
+export function captionCuesForEpisode(rows,hiddenUntilMs=0){
   const cues=[];
   for(const {time,pages}of rows){
     const fps=time.fps??30,offset=time.startMs;
@@ -53,8 +54,9 @@ export function captionCuesForEpisode(rows){
       if(!page.resolved_layout?.lines?.length)throw Error('CAPTION_LAYOUT_MISSING');
       // Scene cuts follow measured millisecond boundaries, which need not land
       // on a video frame. Never let a rounded caption frame cross the cut.
-      const startMs=Math.max(time.startMs,offset+page.start_frame/fps*1000);
+      const startMs=Math.max(time.startMs,hiddenUntilMs,offset+page.start_frame/fps*1000);
       const endMs=Math.min(time.endMs,offset+page.end_frame/fps*1000);
+      if(endMs<=hiddenUntilMs)continue;
       if(endMs<=startMs || (cues.length&&startMs<cues.at(-1).endMs-0.1))
         throw Error('CAPTION_CUE_TIME_INVALID');
       cues.push({startMs,endMs,text:page.resolved_layout.lines.join('\n')});

@@ -49,7 +49,7 @@ test('all zodiac covers use native vector glyphs, not arbitrary letter monograms
  assert.match(zodiacGlyph('Nhân Mã'),/M20 81 L81 20/u);
 });
 
-test('series-topic opening identifies zodiac and theme, begins at frame zero without delaying captions',async()=>{
+test('series-topic opening identifies zodiac and theme, begins at frame zero and hides captions until it is gone',async()=>{
  const opening={format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:'Nhân Mã',
    topic:'Cách Nhân Mã yêu thật lòng',duration_frames:45,transition_frames:9};
  const runtime=await previewRuntime(path.resolve('.'));
@@ -74,7 +74,7 @@ test('series-topic opening identifies zodiac and theme, begins at frame zero wit
   played.seek(1.4);assert.ok(Number(overlay.style.opacity)>0 && Number(overlay.style.opacity)<1);
   played.seek(1.55);assert.equal(overlay.style.opacity,'0');
  }
- assert.equal(full.frames,90);assert.equal(full.caption_cues[0].startMs,0);
+ assert.equal(full.frames,90);assert.ok(full.caption_cues.every(cue=>cue.startMs>=1500),'no subtitle is listed under the cover (45 frames at 30 fps)');
 });
 
 test('opening rejects replacing series topic with arbitrary hook without sign',()=>{
