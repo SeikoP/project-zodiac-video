@@ -30,6 +30,8 @@ Novelty and emotional tension are more important than satisfying a fixed templat
 
 ### Narrative Design
 
+Apply **Profile Fidelity Review** for Long/Short Profile (narration-skeleton.md section 6d): map profile facets before examples or motif, require example necessity, and advance via semantic gains rather than staged incidents. Repeat the example-removal, profile recall and motif-pressure checks at Content Review. Situation mode is unaffected.
+
 Build one coherent Story Spine with:
 - a hook that creates immediate tension or recognition;
 - escalation rather than repeated trait listing (a fixed single-sign skeleton from `references/narration-skeleton.md` is allowed because each section does a different job; two sections with the same job are still a defect);

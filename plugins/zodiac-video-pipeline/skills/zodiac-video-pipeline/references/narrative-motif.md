@@ -8,7 +8,7 @@ It is authored **before Narration** when the selected concept depends on a recur
 
 A strong hook can still flatten after the midpoint when the script stops progressing and starts explaining. The motif gives the story one thing to keep transforming, so later beats can continue the story instead of restating the thesis.
 
-Do not use a motif merely because a phrase sounds clever. A motif must carry semantic progression.
+Do not use a motif merely because a phrase sounds clever. A motif must carry semantic progression. **Profile Fidelity Review:** in profile modes, the behavioral facet map precedes the motif. A verbal contrast or repeated behavior may suffice, and direct profiles may omit a motif explicitly. Do not generate new incidents, objects or micro-scenes to service a motif; use the motif-pressure test in narration-skeleton.md section 6d. A memorable object does not outrank the Zodiac profile.
 
 ## Narrative Design contract
 

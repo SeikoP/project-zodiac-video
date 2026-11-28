@@ -19,7 +19,7 @@ Style source: `style-references/profile-structure-references.md` (three referenc
 | # | Slot | Job | Limit (tokens) |
 |---|------|-----|----------------|
 | 1 | Hook | Promise a counted list that costs the viewer something; the first sentence ends by token 16 | ≤24 |
-| 2-4 | Concept-led facets | "Thứ nhất / Thứ hai / Thứ ba": one promised thing each, with a concrete moment; dealbreakers only for warning concepts | 30-70 each |
+| 2-4 | Concept-led facets | "Thứ nhất / Thứ hai / Thứ ba": one promised behavior each, with a recognizable cue or brief example where useful; dealbreakers only for warning concepts | 30-70 each |
 | 5 | Outer | How the sign looks from outside, then what is really going on (contrast marker) | 50-90 |
 | 6 | Dark / friction | A cost, uncomfortable limit or contradiction of the active concept (contrast marker); withdrawal only when it advances that concept | 50-90 |
 | 7 | Night | The private side (contrast marker) | 50-90 |
@@ -100,6 +100,19 @@ Run after a complete draft, before Content Review. A script can be structurally 
 Regression scenarios (mechanisms only, not new scripts): a warm romance draft loses momentum by abruptly switching to a breakup; keep the friction within the love dynamic. A generic apology illustrates little about a pride-centered sign; show an observable cost to the self-image instead. A warm beat already makes the point; the Turn should not explain it three more ways. If the draft has no such defect, keep it unchanged. These are editorial checks, not fixed sign-to-story rules or additional mandatory JSON fields.
 
 Content Review reports the materially weak beats and repairs (or none found), actual paragraph counts, and remaining limitations. The review does not imply that TTS or audience retention has been measured.
+
+## 6d. Profile Fidelity Review (Long and Short Profile)
+
+A profile is a character analysis in spoken form, not a sequence of miniature stories. Specificity comes from observable habits, choices, contrasts and consequences, not necessarily a named setting, object or plot. Situation mode remains available for an explicitly requested situation and keeps its own requirements.
+
+- **Profile-first:** before choosing scenes or motifs, identify the evidence-bounded sign mechanism and the active concept's behavioral contrast. Map distinct facets: what changes in attention, expression, priorities, decisions, communication or vulnerability? Do not invent motives as facts. For relationship contrasts, show the same mechanism with ordinary people and important people, rather than collecting acts of service.
+- **Example necessity:** each situation must clarify a specific profile facet that would otherwise be unclear, add a distinct consequence, or carry an earned joke. Brief everyday cues and direct observations are valid; do not make every paragraph a setup/action/resolution sketch. Concrete does not mean staged. Do not create props, settings or incidents because a slot, renderer or motif needs material.
+- **Example-removal test:** temporarily remove the setting, prop and incident details from a paragraph. A distinct, recognizable behavioral insight must remain. Substitute another everyday context; the insight should survive. If not, return to Concept/Narrative Design rather than adding a generic explanatory sentence after the sketch.
+- **Profile recall test:** after the exact narration, summarize what viewers learn about the sign without retelling examples. If the memorable result is mainly a list of objects or events, repair the underlying facet map. Recognition and named sign-swap still matter.
+- **Motif-pressure test:** choose a motif only after the profile map and only if it earns continuity. It may be a verbal contrast or behavioral pattern; direct deconstruction can omit it with a reason. Never reverse-engineer extra examples merely to repeat a motif. The payoff can be a sharp profile reframe without a staged climax.
+- **Semantic progression without plot:** advance from observable behavior to contrasting response, cost, private side, trust and reframe. Direct interpretation is useful when new and evidence-bounded. No mandatory micro-scene per beat, ratio of examples, or forced physical action. Preserve good scenes when they genuinely reveal the profile.
+
+Regression: a perfectionism-in-love profile becomes a series about fixing a bag, keys, luggage and cake because the motif demands things to fix. Replace that premise construction with differentiated attention, feedback, standards, friction and vulnerability. An example may remain if it serves a facet rather than the other way around. No fixed sign-to-trait formula, no new required JSON fields, no change to handoff. At Content Review give a short facet map, one removal test and motif decision, and identify any remaining scene dominance.
 
 ## 7. Trend phrase pass (optional, at most two phrases)
 

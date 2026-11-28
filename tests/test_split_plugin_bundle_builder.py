@@ -274,6 +274,30 @@ class SplitPluginBundleTests(unittest.TestCase):
             self.assertIn(phrase, skill)
         self.assertIn("zodiac-phase1-handoff@2", skill)
 
+    def test_web_profile_fidelity_is_reachable_and_not_a_scene_quota(self):
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "web.zip"
+            build_profile(ROOT, "web", destination)
+            with ZipFile(destination) as archive:
+                def read(suffix):
+                    return next(archive.read(n).decode("utf-8").lower()
+                                for n in archive.namelist() if n.endswith(suffix))
+                skill = read("zodiac-video-web/SKILL.md")
+                skeleton = read("references/narration-skeleton.md")
+                motif = read("references/narrative-motif.md")
+                brief = read("references/phase01-briefing.md")
+                identity = read("references/zodiac-identity-first.md")
+                phase = read("orchestration/phases/01-content.md")
+        for doc in (skill, skeleton, motif, brief, identity, phase):
+            self.assertIn("profile fidelity review", doc)
+        for phrase in ("example necessity", "example-removal test", "profile recall test",
+                       "motif-pressure test", "semantic progression without plot",
+                       "no mandatory micro-scene per beat", "situation mode remains available"):
+            self.assertIn(phrase, skeleton)
+        self.assertIn("do not generate new incidents", motif)
+        self.assertIn("no additional artifact or approval gate", skill)
+        self.assertIn("zodiac-phase1-handoff@2", skill)
+
     def test_plugin_manifests_share_one_version(self):
         base = ROOT / "plugins/zodiac-video-pipeline"
         versions = {

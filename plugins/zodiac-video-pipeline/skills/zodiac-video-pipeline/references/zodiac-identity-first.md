@@ -14,3 +14,8 @@ A scene, concrete action or deadpan observation may open before naming the sign.
 Perform one native editorial pass against the actual draft. Check sign-swap, scene dominance and moral-arc drift, then the six story criteria. Sign-swap asks whether the selected lens and reasoning are warranted; it does not demand a human behavior exclusive to one sign. Shared behavior is possible, unsupported exclusive claims are not. A PASS can record no objection; REVIEW must identify the actual unresolved problem with grounded excerpts. Do not manufacture criticisms or excerpt diversity to fill quotas. Structural validation is not creative approval.
 
 For Narrative2.1 use episode_scope/member_lenses without inventing a primary sign. Each selected member retains source-bounded interpretation and ranking honesty. Preserve approved narration bytes and genuine review/source fingerprints. Wording repairs do not automatically reopen research when sources and interpretation remain unchanged.
+
+
+## Profile Fidelity Review
+
+In a profile, character mechanism determines the behavior, and behavior determines whether an example is useful. The inverse (choosing an incident, then explaining a sign through it) risks scene dominance. Direct, specific observations are valid evidence-bounded storytelling; progression can be an insight, cost or reframe rather than an event. See `narration-skeleton.md` section 6d.
