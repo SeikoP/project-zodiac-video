@@ -29,9 +29,9 @@ Ma Kết's three Story Visuals were not pictures placed in a scene; each one **w
 
 ## Studio graphics: your own pictures (only the script is fixed)
 The owner approves the narration. Every picture decision after that is Studio's to invent, so Studio does not wait for a Phase 1 direction to draw a picture. In the stage choice, `graphic` is one optional drawing (stamp, meter, versus, receipt, route, folder, tally or chat_thread) that makes ONE fact of the scene visible: a verdict word, a level between two sides, two columns compared, items and a total, stops on a route, a named folder, a count, messages. Choose it when the narration states something the viewer can see better than hear; otherwise `none`.
-- Different picture in every scene (a sketch is drawn anew each time, so it never repeats). Two scenes that both end in a tally or a chat read as a template, not as a story; Core sends the later scene back.
+- Different picture when a new visual is useful (a sketch is drawn anew each time, so it never repeats). Two scenes that both end in a tally or a chat read as a template, not as a story; Core sends the later scene back.
 - Use the narration's own words in the fields, short. The first piece appears on the anchor you choose and the next pieces on the anchors after it, so pick the anchor where the fact is said.
-- A scene with a Phase 1 Story Visual keeps that one; no second picture.
+- A scene with a Phase 1 Story Visual keeps that meaning; no competing second picture.
 
 ## Not a label
 A Studio graphic that would read the same with the characters removed is a label card, not a story picture. Apply the five tests in `invention.md` (removal, anchor, change, own words, size) before choosing a motif, and prefer a picture the characters visibly react to on the same anchor. Different motif per scene is the minimum, not the goal: fill the fields with this moment's own words.
@@ -51,9 +51,9 @@ Fixed layouts (stamp, meter, versus, receipt, route, folder, tally, chat_thread)
 
 The library props are clip-art: they stand beside the characters and the story reads the same without them. The hero is different: it is **the object the scene is about**, drawn by you, and **the words change it**.
 
-- Pick a meaningful object, including a symbolic invention not literally named in the narration and draw it in 2 to 4 **states**: each state is a whole drawing of 2 to 14 parts (same parts, palette and 960x630 canvas as a sketch, every `step` 1), and each state **replaces** the one before.
+- Pick a meaningful object, including a symbolic invention not literally named in the narration and draw it in 1 to 4 **states**: each state is a whole drawing of 2 to 14 parts (same parts, palette and 960x630 canvas as a sketch, every `step` 1), and each state **replaces** the one before.
 - Each state has its own `anchor_id`, in the order of the words; the first state's anchor is the picture's `anchor_id`. The object changes when the narration says it changes: whole, then cut in two unequal pieces, then one piece pushed across, then left alone.
 - Draw the object with its details: slices and a bite, a crack, a crossed-out line, a bent corner. Never a label card. Faces and hands of the characters are not drawn here: the characters are on stage.
-- Removal test: delete the hero. If the scene still reads the same, you drew the wrong object. Core sends a scene back (`HERO_MISSING`) when it has none, and refuses states whose anchors are out of order.
+- Removal test: delete the hero. If the scene still reads the same, you drew the wrong object. Core refuses out-of-order anchors; a static visual or justified omission remains valid.
 
-**Story text is part of the hero (they are one thing).** A hero state is the object plus the words the viewer should remember, lettered inside the drawing as a `text` part (a label on the box, a stamped verdict, the phrase on a sticky note). The words are taken from this scene's narration, never invented; Core refuses a state with no text part drawn from the script. The text may change from state to state with the object ("phần của tôi" on the whole cake, "chia đều" after it is cut).
+**Story text is part of the hero (they are one thing).** A hero state is the object plus the words the viewer should remember, lettered inside the drawing as a `text` part (a label on the box, a stamped verdict, the phrase on a sticky note). Words may be original if they preserve the approved meaning; Lettering is optional and may express the approved idea in concise original words. The text may change from state to state with the object ("phần của tôi" on the whole cake, "chia đều" after it is cut).

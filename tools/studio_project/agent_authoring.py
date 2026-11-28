@@ -11,6 +11,7 @@ from .models import StudioError
 from .service import ASSETS, ROOT
 from .story_visual_art import normalized_asset, visual_schema
 from . import catalog_v5, prop_families
+from .narration_anchors import anchor_offset
 
 MAX_PROPOSAL = 96000
 
@@ -176,13 +177,14 @@ def capsule(service, project_id, instruction, *, repair=False):
     sign = scope.get("sign", "")
     suggested_topic = f"Cách {sign} yêu thật lòng" if scope.get("concept_code") == "love-sincere" and sign else None
     # Supply exact UTF-8 partitions so the model never guesses Vietnamese byte offsets.
-    starts = [0]
-    for beat in plan.get("beats", []):
-        anchor = beat.get("voice_anchor", "")
-        at = narration.find(anchor, starts[-1]) if anchor else -1
-        if at > starts[-1]: starts.append(at)
-    ranges = [{"id": f"s{i+1:02}", "narration_range": [len(narration[:at].encode()), len(narration[:stop].encode())],
-               "text": narration[at:stop]} for i, (at, stop) in enumerate(zip(starts, starts[1:] + [len(narration)]))]
+    starts = sorted({0, *(at for beat in plan.get("beats", []) if (at := anchor_offset(narration, beat)) >= 0)})
+    ranges = []
+    byte_start = 0
+    for i, (at, stop) in enumerate(zip(starts, starts[1:] + [len(narration)])):
+        chunk = narration[at:stop]
+        byte_stop = byte_start + len(chunk.encode("utf8"))
+        ranges.append({"id": f"s{i+1:02}", "narration_range": [byte_start, byte_stop], "text": chunk})
+        byte_start = byte_stop
     result = _capsule_body(service, project_id, instruction, state, voice, timing, handle, narration, plan, scope, ranges, suggested_topic)
     if repair and state["intent"] is not None:
         # Same contract as a retry: the model repairs this candidate and keeps what already validates.

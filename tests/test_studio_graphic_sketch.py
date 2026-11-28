@@ -63,8 +63,13 @@ class HeroTests(unittest.TestCase):
         self.assertNotEqual(first, last)
         self.assertNotIn(b"<rect", first)  # the object itself, no card behind it
 
+    def test_static_hero_is_valid(self):
+        static = {"type": "hero", "states": HERO["states"][:1]}
+        self.assertEqual(story_visual_art.steps(static), 1)
+        self.assertTrue(story_visual_art.visual_svg(static, 1))
+
     def test_bad_heroes_are_refused(self):
-        for bad in ({"type": "hero", "states": HERO["states"][:1]},
+        for bad in ({"type": "hero", "states": []},
                     {"type": "hero", "states": [hero_state(), {"parts": [dict(p, step=2) for p in hero_state()["parts"]]}]},
                     {"type": "hero", "states": [hero_state(), {"parts": hero_state()["parts"][:1]}]},          # too alike: nothing changed
                     {"type": "hero", "states": [hero_state(), {"parts": [part("circle", 300, 250, 120, 120, "card"), part("box", 320, 270, 60, 60, "gold")]}]}):  # a speck
@@ -92,7 +97,7 @@ class HeroTests(unittest.TestCase):
 
 
 class StoryTextTests(unittest.TestCase):
-    def test_a_hero_state_must_carry_words_from_the_scene(self):
+    def test_hero_lettering_can_be_original_or_absent(self):
         from tests.test_studio_scene_assembler import TWO, GOAL, cast_of
         from tools.studio_project import authoring_menus
         text = "Kim Ngưu cắt bánh, đẩy phần to sang cho người yêu."
@@ -101,10 +106,10 @@ class StoryTextTests(unittest.TestCase):
         ids = [a["id"] for a in menus["anchors"]]
 
         def build(label):
-            states = [{"anchor_id": ids[i], "parts": [*HERO["states"][i]["parts"], part("text", 300, 520, 360, 80, "ink", label)]} for i in range(2)]
+            states = [{"anchor_id": ids[i], "parts": [*HERO["states"][i]["parts"], *([part("text", 300, 520, 360, 80, "ink", label)] if label else [])]} for i in range(2)]
             stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none",
                      "graphic": {"motif": "hero", "anchor_id": ids[0], "name": "bánh", "states": states}}
             return scene_assembler.assemble_scene(menus, stage, {"events": []}, "s01", rng, text, GOAL)
         self.assertTrue(build("đẩy phần to"))
-        with self.assertRaises(ValueError):
-            build("chuyện tình yêu")
+        self.assertTrue(build("chuyện tình yêu"))
+        self.assertTrue(build(""))

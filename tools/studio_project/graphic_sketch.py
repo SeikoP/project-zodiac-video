@@ -67,9 +67,9 @@ def parts_of(spec) -> list[dict]:
 
 
 def hero_states(spec) -> list[list[dict]]:
-    """The story's own object, drawn in 2-4 states: each state is a whole drawing, the later one replaces the earlier."""
+    """The story's own object, drawn in 1-4 states: each state is a whole drawing, the later one replaces the earlier."""
     states = spec.get("states") if set(spec) == {"type", "states"} else None
-    if not isinstance(states, list) or not 2 <= len(states) <= 4 or any(not isinstance(s, dict) or set(s) != {"parts"} for s in states):
+    if not isinstance(states, list) or not 1 <= len(states) <= 4 or any(not isinstance(s, dict) or set(s) != {"parts"} for s in states):
         reject("hero_states")
     drawn = [_check_parts(s["parts"], low=2, single_step=True) for s in states]
     for number, parts in enumerate(drawn, 1):  # the object is the picture: it fills the canvas, it is not a speck in a corner

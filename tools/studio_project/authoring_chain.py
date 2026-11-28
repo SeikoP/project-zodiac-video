@@ -451,13 +451,12 @@ class LiveIO:
         from . import authoring_menus
         schema, data = authoring_menus.brief_schema(self.scene_ids()), authoring_menus.brief_data(self._dossier())
         brief = self.choose("brief", schema, data)
-        pictures = sum(1 for row in brief.get("scenes", []) if (row.get("picture") or {}).get("motif") not in (None, "none"))
-        owed = authoring_menus.pictures_owed(len(self.scene_ids()))
-        if pictures < owed:  # an episode of talking characters only: ask the SAME agent to reconsider once, with the reason; its answer stands
+        rows = brief.get("scenes", [])
+        # A documented editorial omission is valid; no count-based model retry.
+        # Only an unexplained all-none brief needs one clarification.
+        if rows and all((row.get("picture") or {}).get("motif") in (None, "none") for row in rows) and any(not str((row.get("picture") or {}).get("why") or "").strip() for row in rows):
             brief = self.choose("brief", schema, {**data, "previous_brief": brief, "previous_findings": [{
-                "code": "BRIEF_PICTURES_MISSING", "detail": f"{pictures} of {len(self.scene_ids())} scenes carry a picture; an episode of this length "
-                f"needs at least {owed}. Reread the script for the scenes where a viewer would follow better by SEEING a count, a comparison, "
-                "messages or a verdict, and plan those; keep 'none' only where the characters already carry the beat."}]})
+                "code": "BRIEF_PICTURES_MISSING", "detail": "All pictures were omitted without a reason. Explore literal and nonliteral alternatives; select a useful visual or explain why omission is justified. No scene quota."}]})
         return brief
 
     def use_brief(self, brief: dict) -> None:

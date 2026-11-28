@@ -400,6 +400,16 @@ class ProductionBriefTests(unittest.TestCase):
         self.assertTrue(dossier["vocabulary"]["props"])  # the library the stage menus offer, not the compact catalog
         self.assertEqual(len(dossier["narration_by_scene"]), 2)
 
+    def test_documented_omission_does_not_trigger_quota_retry(self):
+        io = self.make_io()
+        calls = []
+        none = {"scenes": [{"scene_id": s, "picture": {"motif": "none", "why": "No added meaning after literal and nonliteral exploration."}} for s in ("s01", "s02")]}
+        io.choose = lambda kind, schema, data: (calls.append(data), none)[1]
+        io._dossier = lambda: {}
+        io.scene_ids = lambda: ["s01", "s02"]
+        self.assertEqual(io.read_brief(), none)
+        self.assertEqual(len(calls), 1)
+
     def test_a_brief_of_only_none_is_put_back_to_the_agent_once(self):
         io = self.make_io()
         calls = []

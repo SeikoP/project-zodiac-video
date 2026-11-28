@@ -132,20 +132,16 @@ BRIEF_RULES = (
     "You are preparing the production brief BEFORE anything is built. Read every document in the data (the narration scene by scene, the "
     "narrative plan, the writer brief, the episode scope, the voice direction) and the whole skill above, then write the brief exactly as "
     "brief.md describes. Think about the episode as ONE argument: what it claims, where it turns, what the viewer must see to follow it "
-    "muted. A Story Visual is OPTIONAL and has no quota (story-visual.md): use one only where it passes all five tests (central, concrete, zodiac-grounded, readable with the sound off, additive beyond the actors, the library props and the place); otherwise picture.motif = none with the reason. When you use one, plan it as: fact = who and what, with identity and ownership visible; change = before -> change -> consequence in one sentence; why = what is lost without it. Draw it yourself: hero (one object in 2-4 states the words change, with the story text lettered in it) or sketch (a diagram of a relationship or a count that builds up); the story text is part of the picture, not a separate overlay. Fixed layouts are only a fallback. Pictures (graphic) make ONE countable, comparable or written fact visible. Prefer a sketch: a drawing YOU compose for this scene from parts (see graphic_rules), so no two episodes share one; a fixed layout is the fallback when it fits exactly: stamp (a verdict word), meter (a level between two "
-    "sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a "
-    "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
-    "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese. "
+    "with the narration. Story Visual is original imagery expressing the episode meaning, including metaphor, exaggeration, static symbolic composition, visual humor and optional integrated lettering. "
+    "Explore nonliteral alternatives even when the cast and props already depict the action. Prefer a meaningful episode-level visual, no numerical quota. "
+    "For picture: fact = approved meaning; change = static arrangement, reveal or evolution; why = lost clarity, wit, emotion or memorability. "
+    "Hero uses one to four states, sketch is a freely composed picture; use fixed layouts only when they fit. Quiet scenes may choose none with a specific reason. "
+    "Respect approved Phase 1 directions and invent their execution. Do not use decoration or duplicate captions. Short, concrete, Vietnamese. "
     "The cover is this episode's own (brief.md): topic, hook of 6-14 words stating its contradiction, a scene and a symbolic object, never the "
     "concept template and never like recent_episodes. who_on_stage per scene: A frame holds at most 3 people, and only three-person-comparison holds 3 (it has no prop slot); with a prop on the stage at most 2 people. A cast of 4 means different scenes show different people, never 4 in one frame. Follow invention.md: list every person who acts or is acted on (on_screen true) as a character, give EACH scene one story device that "
     "is not 'they talk' (hand-over, prop as evidence, distance as meaning, accumulation, reaction chain, split stage, callback), make the "
-    "hero change on screen with the words, state by state; library props are only background, at most one per scene and only when it does something; tie each picture to what a character does on the same "
+    "hero reveal or change on the meaningful anchor; library props are only background, at most one per scene and only when it does something; tie each picture to meaning on the relevant "
     "anchor (it must fail the removal test), vary the setting scene to scene, and say in 'rhythm' what differs from recent_episodes.")
-
-
-def pictures_owed(scene_count: int) -> int:
-    """How many scenes of an episode this long should carry a picture (at least one; about one in three)."""
-    return max(1, round(scene_count / 3)) if scene_count else 0
 
 
 def brief_data(dossier: dict) -> dict:
@@ -181,23 +177,19 @@ def _object(properties: dict) -> dict:
 
 
 GRAPHIC_RULES = (
-    "HERO (a Story Visual that follows ONE object): the object this scene is about (the cake, the pillow, the film, the message), drawn by you in 2-4 states that "
-    "the narration changes: whole, then cut, then handed over, then left alone. Each state is a complete drawing (2-14 parts, same parts and 960x630 canvas "
-    "as sketch, every step 1) that REPLACES the one before; the object FILLS the canvas (at least 55% of its width or height; Core refuses a speck) and each state differs from the one before by at least two parts (a slice cut away, a part moved, crossed out, added); each state has its own anchor_id, in the order of the words, and the first state's anchor is "
-    "the graphic's anchor_id. The change must be what the words say, the STORY TEXT is part of the picture (merged with the story visual): every state letters at least one text part with words taken from this scene's narration (the phrase the viewer should remember, <=28 chars), so the drawing and the words are one thing; and it exists only if it passes the Story Visual tests: if the object could be deleted and "
-    "the story would read the same, choose none instead. Before -> change -> consequence, with identity and ownership readable in the picture (whose cake, whose seat). Draw the object itself, with its details (slices, a bite, a crack, a crossed-out line), "
-    "never a label card; faces and hands of the characters are NOT drawn here, the characters are on stage. Library props are only background now. "
+    "HERO: an original symbolic or literal object or composition, drawn in 1-4 states. A single static state revealed on its narration anchor is valid. "
+    "Each state is a complete drawing (2-14 parts on a 960x630 canvas, every step 1) that replaces the previous state if any. "
+    "Fill at least 55% of the width or height; successive states must visibly differ. Each state has its own ordered anchor_id, first equals the graphic anchor_id. "
+    "Optional short lettering is integrated into the picture, not a separate overlay. Use approved meaning and avoid unsupported facts. "
+    "Metaphor, visual humor and exaggeration need not depict an actual scene or literal object named in the script. A meaningful image must pass the removal test. "
     "SKETCH (preferred): draw the scene's idea yourself as 3-18 parts on a 960x630 canvas (x,y = top-left, w,h = size; for line/arrow w,h are the "
     "end offset). Shapes: box, circle, line, arrow, text (a short label), face (text = happy|flat|angry|sad|surprised), check, cross, heart, star, scribble, wedge (a cake or pie slice), phone, pillow, cup. "
     "Colours ink, paper, teal, coral, gold, card. step 1-4 = the order the parts appear on the anchors, steps with no gaps. Compose a picture of THIS story, not a "
     "chart: the cake cut in two unequal slices with a hand on one, a door with an arrow and a clock, two faces and a heart growing between them. "
     "x+w must be <= 960 and y+h <= 630 (a box, circle or face needs w,h of at least 20; only a line or arrow may have 0 or negative w,h). Keep parts apart, labels short (<=28 chars, text width must fit its box), keep 40px free at the edges. Never the same drawing as another scene. "
-    "graphic = an OPTIONAL picture Studio draws to make ONE story fact visible (not decoration). Pick 'none' unless the narration states "
-    "something countable, comparable or written that the viewer should SEE: a stamp (a verdict word), meter (a level between two sides), "
-    "versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a count), "
-    "chat_thread (messages). The episode needs at least one such picture (about one scene in four): Core sends a scene back when its "
-    "words state a countable, comparable or written fact and you chose 'none'. Use a DIFFERENT motif in every scene; never the same one twice. Fields are short, in Vietnamese, exact words "
-    "from the narration where possible. anchor_id = the words where the picture first appears; later pieces appear on the anchors after it.")
+    "graphic is original visual storytelling, not decoration. Draw an idea, emotional contrast, joke, or reframe, not just a countable fact. "
+    "Normally plan one meaningful image for the episode; no numerical quota or mandatory per-scene picture. Use none for quiet beats with reasons. "
+    "Fixed layouts are fallbacks, not a list of allowed meanings. Anchor each reveal to the actual words; callbacks are intentional, not template reuse.")
 GRAPHIC_MOTIFS = ("hero", "sketch", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
 
 
@@ -208,7 +200,7 @@ def _graphic_schema(menus: dict) -> dict:
     return {"anyOf": [
         _object({"motif": _enum(["none"])}),
         _object({"motif": _enum(["hero"]), "anchor_id": anchor, "name": text(30),
-                 "states": {"type": "array", "minItems": 2, "maxItems": 4, "items": _object({
+                 "states": {"type": "array", "minItems": 1, "maxItems": 4, "items": _object({
                      "anchor_id": anchor,
                      "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960, -960), "h": _int(630, -630),
                                            "color": _enum(tuple(SKETCH_COLORS)), "text": text(28), "step": _int(1, 1)}), 14)})}}),

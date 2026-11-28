@@ -42,6 +42,23 @@ class PartsTests(unittest.TestCase):
         self.assertEqual(self.task("s02")["must_use_story_visuals"], ["SV01"])
         self.assertEqual(self.task("s01")["must_use_story_visuals"], [])
 
+    def test_repeated_anchor_respects_approved_global_occurrence(self):
+        context = {"narrative_plan": {"beats": [{"id": "B1", "voice_anchor": "same words", "occurrence": 2}],
+                                      "story_visuals": [{"id": "V1", "beat_ids": ["B1"]}]},
+                   "required_story_visual_ids": ["V1"],
+                   "scene_ranges": [{"id": "s01", "text": "same words before. "},
+                                    {"id": "s02", "text": "same words after."}]}
+        self.assertEqual(agent_parts.story_visuals_by_scene(context), {"s02": ["V1"]})
+        from tools.studio_project.scene_assembler import story_reveal_text
+        self.assertIsNone(story_reveal_text(context, "s01"))
+        self.assertEqual(story_reveal_text(context, "s02"), "same words")
+
+    def test_anchor_occurrence_matches_contract(self):
+        from tools.studio_project.narration_anchors import anchor_offset
+        self.assertEqual(anchor_offset("abc abc abc", {"voice_anchor": "abc", "occurrence": 3}), 8)
+        self.assertEqual(anchor_offset("aaaa", {"voice_anchor": "aa", "occurrence": 2}), 2)
+        self.assertEqual(anchor_offset("abc", {"voice_anchor": "abc", "occurrence": 2}), -1)
+
     def test_scene_task_is_small_and_carries_cast_and_style(self):
         task = self.task("s02")
         self.assertEqual(task["cast"], [{"entity_id": "hero", "states": ["neutral", "react"]}])

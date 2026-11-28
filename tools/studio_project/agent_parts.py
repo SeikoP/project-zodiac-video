@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 from . import skill_digest
+from .narration_anchors import scene_binding
 from .scene_ops import apply_scene_ops, scene_changes
 
 # The channel's animation style (docs/superpowers/specs/2026-11-25-limited-2d-cutout-style.md), as the agent must apply it.
@@ -53,23 +54,29 @@ def scene_text(context: dict, scene_id: str) -> str:
     return next((row["text"] for row in context["scene_ranges"] if row["id"] == scene_id), "")
 
 
-def story_visuals_by_scene(context: dict) -> dict[str, list[str]]:
-    """Which scene must carry each required Phase 1 story visual: the scene that contains its beat's voice anchor."""
+def story_visual_bindings(context: dict) -> dict[str, tuple[str, int, str]]:
+    """Map each required visual to its first owning beat, respecting global occurrence."""
     plan = context.get("narrative_plan") or {}
     beats = {b.get("id"): b for b in plan.get("beats", []) if isinstance(b, dict)}
-    result: dict[str, list[str]] = {}
+    result = {}
     required = set(context.get("required_story_visual_ids") or [])
     for sv in plan.get("story_visuals", []):
         if not isinstance(sv, dict) or sv.get("id") not in required:
             continue
         for beat_id in sv.get("beat_ids", []):
-            anchor = (beats.get(beat_id) or {}).get("voice_anchor", "")
-            scene = next((r["id"] for r in context["scene_ranges"] if anchor and anchor in r["text"]), None)
-            if scene:
-                result.setdefault(scene, [])
-                if sv["id"] not in result[scene]:
-                    result[scene].append(sv["id"])
+            beat = beats.get(beat_id) or {}
+            binding = scene_binding(context["scene_ranges"], beat)
+            if binding:
+                result[sv["id"]] = (*binding, beat["voice_anchor"])
                 break
+    return result
+
+
+def story_visuals_by_scene(context: dict) -> dict[str, list[str]]:
+    """Which scene must carry each approved Phase 1 story visual."""
+    result: dict[str, list[str]] = {}
+    for visual_id, (scene_id, _, _) in story_visual_bindings(context).items():
+        result.setdefault(scene_id, []).append(visual_id)
     return result
 
 
