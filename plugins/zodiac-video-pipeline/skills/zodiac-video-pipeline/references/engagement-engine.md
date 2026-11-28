@@ -41,6 +41,12 @@ Direct address ("bạn") is allowed at these points and wherever it makes recogn
 
 The review (`interaction_check`) quotes the spoken text for each of the four fields. The quotable line is also checked verbatim against the narration. This is an editorial gate, not measured engagement: record real comments, shares and replays after publishing before drawing conclusions.
 
+### Spoken interaction design (required for fresh episodes)
+
+Before drafting Narration, author four distinct, episode-specific spoken moves in the existing engagement direction: a comment choice between recognizable behaviors (leave the answer open), a share cue that identifies a specific person or relationship, a memorable exact quotable line, and a replay seam with both opening and closing wording. Record the intended beat and candidate spoken wording for each in the existing Writer Brief prose. These are creative targets, not four mandatory standalone sentences or generic calls to action. The same line can serve multiple jobs only when the contribution is distinct.
+
+At Content Review, show a compact **Interaction Check** with each of the four fields, exact spoken excerpt(s), beat ID(s), expected viewer action, and PASS or REVIEW with reason. For replay, quote both hook and payoff; for comment, demonstrate the choice remains open; for share, show a specific recognizable recipient; for quote, verify 4-25 whitespace tokens verbatim. A generic question, inferred audience without textual recognition, immediately answered choice, or a repeated hook without changed meaning cannot earn PASS. Repair the owning beat if any field remains REVIEW, then recheck voice anchors and all four fields. Do not retrospectively label unrelated lines as an interaction design. Never claim measured engagement. Keep the interaction direction and check in the existing Writer Brief; do not change the handoff inventory or Narrative Plan version.
+
 ## Narration output: engagement-review.json
 
 After the complete narration exists, review the actual spoken text and write `.authoring/engagement-review.json` with format `zodiac-engagement-review@1`.

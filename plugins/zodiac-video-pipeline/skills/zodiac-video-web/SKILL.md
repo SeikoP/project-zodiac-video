@@ -92,6 +92,8 @@ Show behavior before interpretation. Keep factual Zodiac claims grounded in Evid
 
 Read `skills/zodiac-video-pipeline/references/engagement-engine.md`. For fresh episodes apply engagement-design@2 editorial interaction design before writing: `comment_move`, `share_target`, `quotable_line` (4-25 words, verbatim in narration) and `replay_seam`. During Content Review check all four against actual spoken excerpts, repair failures, and carry the intent in the existing Writer Brief. Web remains guidance-only: do not invent native validator receipts or expand the handoff contract.
 
+For fresh episodes apply the **Spoken interaction design** section in the bundled engagement-engine reference before drafting. Present the four-field Interaction Check with exact spoken excerpts and beat IDs at Content Review; unresolved REVIEW blocks approval. Carry the design and check in existing Writer Brief prose, not a new artifact.
+
 **Recognition is not progression.** Several relatable examples that prove the same trait still perform one semantic job.
 
 Across the whole script, not only after the midpoint, each new beat should add at least one of: action, decision, consequence, useful question, contrast, reframe, callback or payoff. Two adjacent explanation-only beats are a redesign signal unless the second genuinely changes the interpretation or closes a setup.
