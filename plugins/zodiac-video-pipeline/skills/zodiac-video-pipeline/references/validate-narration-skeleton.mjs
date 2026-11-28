@@ -8,11 +8,11 @@ import {fileURLToPath} from 'node:url';
 export const SKELETON={
  paragraphs:6,
  hook_max_tokens:16,
- facet_tokens:[20,60],
- turn_tokens:[10,40],
- close_max_tokens:25,
- total_tokens:[120,300],
- sentence_max_tokens:20,
+ facet_tokens:[20,90],
+ turn_tokens:[10,55],
+ close_max_tokens:35,
+ total_tokens:[120,405],
+ sentence_max_tokens:22,
  min_callback_words:2,
  topic_word_paragraphs:4
 };

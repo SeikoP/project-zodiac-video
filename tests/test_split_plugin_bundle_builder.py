@@ -298,6 +298,25 @@ class SplitPluginBundleTests(unittest.TestCase):
         self.assertIn("no additional artifact or approval gate", skill)
         self.assertIn("zodiac-phase1-handoff@2", skill)
 
+    def test_web_compact_profile_default_duration_discipline(self):
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "web.zip"
+            build_profile(ROOT, "web", destination)
+            with ZipFile(destination) as archive:
+                def read(suffix):
+                    return next(archive.read(n).decode("utf-8").lower()
+                                for n in archive.namelist() if n.endswith(suffix))
+                skill = read("zodiac-video-web/SKILL.md")
+                skeleton = read("references/narration-skeleton.md")
+                phase = read("orchestration/phases/01-content.md")
+        self.assertIn("compact profile** (default", skill)
+        self.assertIn("duration discipline", skill)
+        self.assertIn("65-90 seconds", skeleton)
+        self.assertIn("do not invent scenes", skeleton)
+        self.assertIn("compact six-paragraph profile by default", phase)
+        self.assertIn("short-profile", skeleton)
+        self.assertIn("zodiac-phase1-handoff@2", skill)
+
     def test_plugin_manifests_share_one_version(self):
         base = ROOT / "plugins/zodiac-video-pipeline"
         versions = {

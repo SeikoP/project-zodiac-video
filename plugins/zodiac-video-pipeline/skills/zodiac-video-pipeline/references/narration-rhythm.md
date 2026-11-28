@@ -27,7 +27,7 @@ Run references/short-form-duration.mjs against narration before approval. Review
 
 ## Single-sign skeleton and length (Web)
 
-A `single_sign` script follows one mode of `narration-skeleton.md`. The long profile normally lands at 100-165 seconds, so the 120-second rule above applies to it. On Web there is no native receipt: show the estimated length at Content Review, state that it is an estimate, and treat the user's explicit acceptance of that length as the review. Do not invent a `duration-exception.json` or quote the user for them.
+A `single_sign` script follows one mode of `narration-skeleton.md`. Default to the compact six-paragraph profile, targeting just over 60 seconds (usually 65-90 seconds). Do not pad to a token or scene quota. Use the ten-paragraph long profile only when the extra insights earn the length or the user requests it. The 120-second rule above still applies. On Web there is no native receipt: show the estimated length at Content Review, state that it is an estimate, and treat the user's explicit acceptance of that length as the review. Do not invent a `duration-exception.json` or quote the user for them.
 
 ## Second-half rhythm floor
 

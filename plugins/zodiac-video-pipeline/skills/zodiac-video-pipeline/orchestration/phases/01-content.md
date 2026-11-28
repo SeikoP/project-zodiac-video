@@ -58,7 +58,7 @@ After the prose exists, bind the final narration back to the Narrative Plan befo
 
 Do not write to pass a validator. Editorial review happens after a real draft exists; the runnable beat binding is checked only after drafting and before approval. Run the Narrative Economy Review in `references/narration-skeleton.md` section 6c: use the deletion test, concept-aligned friction, sign-specific choices, explanatory compression and counted hook payoff. Preserve strong beats; lower length targets never justify filler. On revision show the changed excerpts and reasons, then rebind affected anchors, performance, motif and Story Visual before approval.
 
-There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one, except that a `single_sign` script follows one mode of `references/narration-skeleton.md` (long profile by default) and its band. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
+There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one, except that a `single_sign` script follows one mode of `references/narration-skeleton.md` (compact six-paragraph profile by default) and its guidance. Target just over 60 seconds, normally 65-90 seconds, without padding. Use a long profile only for genuinely additional insight or explicit request. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
 
 ## Content Review
 

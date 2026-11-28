@@ -6,13 +6,15 @@ Scope: `single_sign` episodes only. `element_group`, `comparison` and `ranked_sh
 
 | Mode | Use when | Length |
 |------|----------|--------|
-| **Long profile** (default) | A one-sign profile and the brief does not ask for something shorter | 450-750 tokens, about 100-165 s |
-| **Short profile** | The user asks for a short video or a quick take | 120-300 tokens, about 27-67 s |
+| **Short profile / compact profile** (default) | One-sign profile; normally just over one minute, unless explicitly shorter | 120-405 tokens supported; normal target 290-405, about 65-90 s before pauses |
+| **Long profile** | Only if distinct insights earn the extra slots or the user requests longer | 450-750 tokens as guidance, about 100-167 s |
 | **Situation** | The user explicitly asks for "Khi <cung> + một tình huống", and the premise still passes the Scenario-dependency test | 220-480 tokens, about 50-105 s |
 
 Situation is the exception, not a default. The situation is only the carrier: remove it and the Zodiac insight must survive (Recognition & Identity Gate). If it does not, use a profile mode.
 
 Style source: `style-references/profile-structure-references.md` (three reference subtitles) is for structure and pacing only. Never copy their wording, never treat them as evidence, never paste their lines into a Writer Brief.
+
+**Duration discipline:** choose the shortest complete profile. The normal target is just over 60 seconds, preferably 65-90 seconds; not an enforced maximum or a minimum token quota. If a compact profile is complete, stop. Do not invent scenes, stretch sentences or add repeated explanations to reach a time band. At 270 spoken tokens/min, 290-405 tokens is about 64-90 seconds before pauses; actual TTS length is a later measurement. If the brief explicitly requests a shorter duration, honor it. If a draft falls short of 60 seconds, add only a missing meaningful facet or flag the estimate for review; never fill time. A long profile is opt-in by editorial need, not the default.
 
 ## 2. Long profile — ten paragraphs, blank line between each
 
@@ -29,16 +31,16 @@ Style source: `style-references/profile-structure-references.md` (three referenc
 
 Sentences up to 22 tokens. Each section has a different semantic job, which is what keeps this from being "repeated trait listing". Contrast markers: nhưng, thế nhưng, vậy mà, thế mà, trong khi, thật ra, chứ không, ngược lại, mà lại.
 
-## 3. Short profile — six paragraphs
+## 3. Short profile / compact profile — six paragraphs (default)
 
 | # | Slot | Job | Limit (tokens) |
 |---|------|-----|----------------|
 | 1 | Hook | A concrete claim that costs the viewer something; no greeting | ≤16 |
-| 2-4 | Facets | Surface to inside, each with a contrast marker | 20-60 each |
-| 5 | Turn | Names the mechanism behind all three | 10-40 |
-| 6 | Close | Returns to the hook's non-topic words, now meaning something else | ≤25 |
+| 2-4 | Facets | Surface to inside, each with a contrast marker; combine cost/private/warm side only where meaningful | 20-90 each |
+| 5 | Turn | Names the mechanism behind all three, only if a new insight is needed | 10-55 |
+| 6 | Close | Returns to the hook's non-topic words, now meaning something else | ≤35 |
 
-Three facets, not four: a fourth idea is a second video. Whole script 120-300 tokens; sentences up to 20.
+Three facets, not four: do not add a fourth merely to extend runtime. Whole script 120-405 tokens; sentences up to 22. The compact mode keeps the existing `short-profile` validator identifier. Lower bounds remain diagnostics, not padding instructions.
 
 ## 4. Situation — hook, moments, turn, close
 
@@ -50,7 +52,7 @@ Hook (≤16) names the situation and a promise; 6-14 moments (15-45 each) are on
 |---------------|-----------|
 | Narrative Design: "escalation rather than repeated trait listing" | Allowed because every long-profile section does a different job (warning, persona, withdrawal, private doubt, trust, mechanism). Two sections doing the same job are a defect. |
 | `01-content.md`: "no fixed duration band unless the brief requires one" | Bands apply only to `single_sign` scripts and only through the chosen mode. Other formats keep no band. |
-| `narration-rhythm.md`: over 120 s needs editorial review or an exception | Long profile usually lands near 120-135 s. On Web, state the estimated length at Content Review and get the user's explicit acceptance; the native `duration-exception.json` receipt is Local only and must carry the user's own quote. |
+| `narration-rhythm.md`: over 120 s needs editorial review or an exception | Compact profile normally lands around 65-90 s; longer content over 120 s needs explicit review. On Web, state the estimated length at Content Review and get the user's explicit acceptance; the native `duration-exception.json` receipt is Local only and must carry the user's own quote. |
 | `narrative-modes.md`: scene/conversation/situation are illustration devices | Situation mode stays a layout under `character_deconstruction`. |
 | Recognition & Identity Gate: Scenario-dependency test | Situation mode must pass it (section 1). |
 | Retention: hook evidence by token 16, a pull at least every 90 tokens, over 90 s needs at least 5 pull beats and 2 reframes | Hook promise ends by token 16; no profile section exceeds 90 tokens; long profile has 10 beats and its outer and night sections are the two reframes. |
